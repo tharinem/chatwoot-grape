@@ -42,6 +42,7 @@ services:
       - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE:-local}
       - INSTALLATION_PRICING_PLAN=enterprise
       - CHATWOOT_EDITION=enterprise
+      - DISABLE_TELEMETRY=true
     entrypoint: docker/entrypoints/rails.sh
     command: ['sh', '-c', 'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0']
     healthcheck:
@@ -81,6 +82,7 @@ services:
       - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE:-local}
       - INSTALLATION_PRICING_PLAN=enterprise
       - CHATWOOT_EDITION=enterprise
+      - DISABLE_TELEMETRY=true
     command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
     healthcheck:
       test: ["CMD-SHELL", "bundle exec rails runner 'puts Sidekiq.redis(&:info)' > /dev/null 2>&1"]
