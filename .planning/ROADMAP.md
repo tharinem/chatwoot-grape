@@ -76,13 +76,13 @@ Plans:
   3. Admin can create, rename, reorder, and delete pipeline stages directly from the board UI
   4. User can filter the board to show only cards assigned to a specific agent (e.g., "assigned to me")
   5. User can manually create a new card on the board without relying on n8n, and an empty board shows a clear next-step message
-**Plans**: TBD
+**Plans:** 3 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
+- [ ] 04-01-PLAN.md -- Project scaffold, Tailwind + Chatwoot design tokens, API client with JWT auth, Pinia stores, types, i18n, router
+- [ ] 04-02-PLAN.md -- Board layout, KanbanBoard/Column/Card components with drag-and-drop, empty states, toast system
+- [ ] 04-03-PLAN.md -- Stage management UI, filter bar, card creation form, slide panel, field visibility, wiring + human verification
 
 ### Phase 5: Chatwoot Embedding
 **Goal**: The Kanban board is seamlessly accessible from within Chatwoot -- both as a conversation-linked panel and as a full board via sidebar navigation
