@@ -12,7 +12,9 @@ Clientes devem conseguir gerenciar leads em um pipeline Kanban visual, com cards
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] API REST própria para criação e gestão de cards (usada pelo n8n) — Validated in Phase 02: kanban-api-auth
+- [x] Autenticação compartilhada — usuário logado no Chatwoot acessa os módulos sem novo login — Validated in Phase 02: kanban-api-auth (token exchange flow)
+- [x] Colunas/estágios do pipeline configuráveis por conta — Validated in Phase 02: kanban-api-auth (stages CRUD with tenant isolation)
 
 ### Active
 
@@ -82,4 +84,4 @@ Este documento evolui a cada transição de fase e marco de milestone.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-09 after initialization*
+*Last updated: 2026-04-10 after Phase 02 completion*
