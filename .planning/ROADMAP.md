@@ -76,13 +76,14 @@ Plans:
   3. Admin can create, rename, reorder, and delete pipeline stages directly from the board UI
   4. User can filter the board to show only cards assigned to a specific agent (e.g., "assigned to me")
   5. User can manually create a new card on the board without relying on n8n, and an empty board shows a clear next-step message
-**Plans:** 3 plans
+**Plans:** 4 plans
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md -- Project scaffold, Tailwind + Chatwoot design tokens, API client with JWT auth, Pinia stores, types, i18n, router
-- [ ] 04-02-PLAN.md -- Board layout, KanbanBoard/Column/Card components with drag-and-drop, empty states, toast system
-- [ ] 04-03-PLAN.md -- Stage management UI, filter bar, card creation form, slide panel, field visibility, wiring + human verification
+- [ ] 04-01-PLAN.md -- Project scaffold: Vite + Vue 3 + TypeScript, Tailwind with Chatwoot design tokens, app shell
+- [ ] 04-02-PLAN.md -- Types, API client with JWT auth, Pinia stores, composables, router, i18n translations
+- [ ] 04-03-PLAN.md -- Board layout, KanbanBoard/Column/Card components with drag-and-drop, empty states, toast system
+- [ ] 04-04-PLAN.md -- Stage management UI, filter bar, card creation form, slide panel, field visibility, wiring + human verification
 
 ### Phase 5: Chatwoot Embedding
 **Goal**: The Kanban board is seamlessly accessible from within Chatwoot -- both as a conversation-linked panel and as a full board via sidebar navigation
@@ -110,5 +111,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 1. Fork Infrastructure | 0/2 | Planned | - |
 | 2. Kanban API & Auth | 3/3 | Complete   | 2026-04-10 |
 | 3. n8n Card Creation | 2/2 | Complete | 2026-04-10 |
-| 4. Kanban Frontend | 0/3 | Not started | - |
+| 4. Kanban Frontend | 0/4 | Not started | - |
 | 5. Chatwoot Embedding | 0/2 | Not started | - |
