@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Fork Infrastructure** - Chatwoot fork deployed on Coolify with minimal divergence and upstream sync procedure
 - [x] **Phase 2: Kanban API & Auth** - Backend service with REST endpoints, Chatwoot token auth, JWT exchange, and multi-tenant isolation (completed 2026-04-10)
-- [ ] **Phase 3: n8n Card Creation** - Webhook-driven card creation with idempotency and fast acknowledgment for n8n
+- [x] **Phase 3: n8n Card Creation** - Webhook-driven card creation with idempotency and fast acknowledgment for n8n (completed 2026-04-10)
 - [ ] **Phase 4: Kanban Frontend** - Vue 3 drag-and-drop board with pipeline management, filtering, and manual card creation
 - [ ] **Phase 5: Chatwoot Embedding** - Kanban accessible inside Chatwoot via Dashboard App, sidebar nav item, and standalone URL
 
@@ -64,7 +64,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md -- Schema extensions (ApiKey model, Card idempotency constraint), BullMQ/ioredis install, Redis config, API key helpers, Zod schemas
-- [ ] 03-02-PLAN.md -- API key auth plugin, BullMQ queue/worker, webhook endpoint, API key management routes, app wiring
+- [x] 03-02-PLAN.md -- API key auth plugin, BullMQ queue/worker, webhook endpoint, API key management routes, app wiring
 
 ### Phase 4: Kanban Frontend
 **Goal**: Users can visually manage their lead pipeline through a drag-and-drop Kanban board with filtering and manual card creation
@@ -109,6 +109,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Fork Infrastructure | 0/2 | Planned | - |
 | 2. Kanban API & Auth | 3/3 | Complete   | 2026-04-10 |
-| 3. n8n Card Creation | 0/2 | Planning complete | - |
+| 3. n8n Card Creation | 2/2 | Complete | 2026-04-10 |
 | 4. Kanban Frontend | 0/3 | Not started | - |
 | 5. Chatwoot Embedding | 0/2 | Not started | - |
