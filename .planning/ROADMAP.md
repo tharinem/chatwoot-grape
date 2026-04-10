@@ -45,12 +45,12 @@ Plans:
   3. An admin can create, rename, reorder, and delete pipeline stages via the API, and stages are isolated per account
   4. API documentation is auto-generated (OpenAPI/Swagger) and accessible in a browser
   5. Cards can be listed, updated, and moved between stages via REST endpoints
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md -- Project scaffold, Prisma schema, Chatwoot token exchange auth flow with JWT and tenant middleware
+- [ ] 02-02-PLAN.md -- Stages CRUD with admin guards, reorder, and Swagger documentation
+- [ ] 02-03-PLAN.md -- Cards CRUD with cursor pagination, soft delete, and stage movement
 
 ### Phase 3: n8n Card Creation
 **Goal**: n8n can automatically create Kanban cards when new conversations arrive in Chatwoot, with guaranteed idempotency and fast webhook response
@@ -107,7 +107,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Fork Infrastructure | 0/2 | Planned | - |
-| 2. Kanban API & Auth | 0/3 | Not started | - |
+| 2. Kanban API & Auth | 0/3 | Planned | - |
 | 3. n8n Card Creation | 0/1 | Not started | - |
 | 4. Kanban Frontend | 0/3 | Not started | - |
 | 5. Chatwoot Embedding | 0/2 | Not started | - |
