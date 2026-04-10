@@ -41,6 +41,21 @@ model Card {
 
   @@index([accountId, stageId])
   @@index([accountId, conversationId])
+  @@unique([accountId, conversationId])
   @@index([accountId, deletedAt])
   @@map("cards")
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  accountId Int       @map("account_id")
+  keyHash   String    @map("key_hash")
+  salt      String
+  prefix    String    @db.VarChar(8)
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  @@index([accountId])
+  @@index([prefix])
+  @@map("api_keys")
 }
