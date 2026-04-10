@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useBoardStore } from '@/stores/board';
 import { useAuthStore } from '@/stores/auth';
@@ -7,11 +7,17 @@ import BoardLayout from '@/components/layout/BoardLayout.vue';
 import BoardTopBar from '@/components/layout/BoardTopBar.vue';
 import KanbanBoard from '@/components/board/KanbanBoard.vue';
 import EmptyBoard from '@/components/board/EmptyBoard.vue';
+import CardSlidePanel from '@/components/detail/CardSlidePanel.vue';
+import CardForm from '@/components/detail/CardForm.vue';
 import Toast from '@/components/shared/Toast.vue';
 
 const { t } = useI18n();
 const boardStore = useBoardStore();
 const authStore = useAuthStore();
+
+// Card form state
+const showCardForm = ref(false);
+const cardFormStageId = ref<string | null>(null);
 
 onMounted(async () => {
   authStore.initFromStorage();
@@ -21,12 +27,17 @@ onMounted(async () => {
 async function handleRetry() {
   await boardStore.fetchBoard();
 }
+
+function openNewCardForm(stageId?: string) {
+  cardFormStageId.value = stageId ?? null;
+  showCardForm.value = true;
+}
 </script>
 
 <template>
   <BoardLayout>
     <template #topbar>
-      <BoardTopBar />
+      <BoardTopBar @new-card="openNewCardForm()" />
     </template>
 
     <!-- Loading skeleton -->
@@ -65,10 +76,24 @@ async function handleRetry() {
     <!-- Empty state -->
     <EmptyBoard
       v-else-if="boardStore.cardCount === 0 && !boardStore.loading"
+      @create-card="openNewCardForm()"
     />
 
     <!-- Board -->
-    <KanbanBoard v-else />
+    <KanbanBoard
+      v-else
+      @add-card="(stageId: string) => openNewCardForm(stageId)"
+    />
+
+    <!-- Slide panel for card details -->
+    <CardSlidePanel />
+
+    <!-- Card creation form -->
+    <CardForm
+      :stage-id="cardFormStageId"
+      :is-open="showCardForm"
+      @close="showCardForm = false"
+    />
 
     <Toast />
   </BoardLayout>

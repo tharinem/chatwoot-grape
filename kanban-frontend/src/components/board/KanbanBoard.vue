@@ -2,11 +2,18 @@
 import { useI18n } from 'vue-i18n';
 import { useBoardStore } from '@/stores/board';
 import { useToast } from '@/composables/useToast';
+import { useFilters } from '@/composables/useFilters';
 import KanbanColumn from './KanbanColumn.vue';
+import AddStageButton from './AddStageButton.vue';
 
 const { t } = useI18n();
 const boardStore = useBoardStore();
 const { showToast } = useToast();
+const { filteredCardsByStage } = useFilters();
+
+const emit = defineEmits<{
+  addCard: [stageId: string];
+}>();
 
 async function handleCardMoved(payload: {
   cardId: string;
@@ -39,10 +46,10 @@ async function handleCardMoved(payload: {
       v-for="stage in boardStore.sortedStages"
       :key="stage.id"
       :stage="stage"
-      :cards="boardStore.cardsByStage[stage.id] || []"
+      :cards="filteredCardsByStage[stage.id] || []"
       @card-moved="handleCardMoved"
+      @add-card="(stageId: string) => emit('addCard', stageId)"
     />
-    <!-- Placeholder for AddStageButton (Plan 04 implements) -->
-    <div class="flex-shrink-0 w-[280px]" />
+    <AddStageButton />
   </div>
 </template>

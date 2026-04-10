@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useDraggable } from 'vue-draggable-plus';
 import type { Stage } from '@/types/stage';
 import type { Card } from '@/types/card';
+import { useBoardStore } from '@/stores/board';
+import { useAuthStore } from '@/stores/auth';
+import { useToast } from '@/composables/useToast';
 import KanbanCard from './KanbanCard.vue';
+import ColumnHeader from './ColumnHeader.vue';
 import EmptyColumn from './EmptyColumn.vue';
+import ConfirmDialog from '@/components/shared/ConfirmDialog.vue';
 
 const props = defineProps<{
   stage: Stage;
@@ -18,12 +24,22 @@ const emit = defineEmits<{
     toStageId: string;
     newPosition: number;
   }];
+  addCard: [stageId: string];
 }>();
+
+const { t } = useI18n();
+const boardStore = useBoardStore();
+const authStore = useAuthStore();
+const { showToast } = useToast();
 
 const cardListRef = ref<HTMLElement | null>(null);
 const localCards = ref<Card[]>([...props.cards]);
 
-// Sync local cards when props change (e.g. after store update)
+// Delete stage flow
+const showDeleteConfirm = ref(false);
+const destinationStageId = ref('');
+
+// Sync local cards when props change
 watch(
   () => props.cards,
   (newCards) => {
@@ -56,6 +72,37 @@ useDraggable(cardListRef, localCards, {
     });
   },
 });
+
+const isAdmin = ref(authStore.role === 'administrator');
+
+const otherStages = ref(
+  boardStore.sortedStages.filter((s) => s.id !== props.stage.id),
+);
+
+function handleDeleteStage() {
+  if (props.cards.length > 0) {
+    destinationStageId.value = otherStages.value[0]?.id ?? '';
+  }
+  showDeleteConfirm.value = true;
+}
+
+async function executeDeleteStage() {
+  try {
+    // If cards exist, move them first
+    if (props.cards.length > 0 && destinationStageId.value) {
+      await Promise.all(
+        props.cards.map((c) =>
+          boardStore.updateCard(c.id, { stage_id: destinationStageId.value }),
+        ),
+      );
+    }
+    await boardStore.deleteStage(props.stage.id);
+    showToast('success', t('toast.stageDeleted'));
+  } catch {
+    showToast('error', t('toast.genericError'));
+  }
+  showDeleteConfirm.value = false;
+}
 </script>
 
 <template>
@@ -67,15 +114,13 @@ useDraggable(cardListRef, localCards, {
     />
 
     <!-- Column header -->
-    <div class="flex items-center justify-between px-3 py-2">
-      <div class="flex items-center gap-2">
-        <h3 class="text-base font-semibold text-n-slate-12">
-          {{ stage.name }}
-        </h3>
-        <span class="text-xs text-n-slate-11">({{ cards.length }})</span>
-      </div>
-      <!-- Placeholder for "+" add card button and "..." menu (Plan 04 wires these) -->
-    </div>
+    <ColumnHeader
+      :stage="stage"
+      :card-count="cards.length"
+      :is-admin="isAdmin"
+      @add-card="emit('addCard', stage.id)"
+      @delete-stage="handleDeleteStage"
+    />
 
     <!-- Card list (drag zone) -->
     <div
@@ -93,5 +138,34 @@ useDraggable(cardListRef, localCards, {
 
     <!-- Empty column state -->
     <EmptyColumn v-if="localCards.length === 0" />
+
+    <!-- Delete stage confirmation -->
+    <ConfirmDialog
+      :is-open="showDeleteConfirm"
+      :title="t('stage.menu.delete')"
+      :message="cards.length > 0
+        ? t('stage.deleteConfirmWithCards', { count: cards.length })
+        : t('stage.deleteConfirmEmpty', { name: stage.name })"
+      :confirm-label="t('stage.menu.delete')"
+      variant="danger"
+      @confirm="executeDeleteStage"
+      @cancel="showDeleteConfirm = false"
+    >
+      <!-- Stage selector for cards migration -->
+      <div v-if="cards.length > 0" class="mt-3">
+        <select
+          v-model="destinationStageId"
+          class="w-full px-3 py-2 text-sm bg-n-slate-2 border border-n-weak rounded-lg text-n-slate-12"
+        >
+          <option
+            v-for="s in otherStages"
+            :key="s.id"
+            :value="s.id"
+          >
+            {{ s.name }}
+          </option>
+        </select>
+      </div>
+    </ConfirmDialog>
   </div>
 </template>
