@@ -1,0 +1,66 @@
+{
+  "board": {
+    "title": "Pipeline de Leads",
+    "newCard": "Novo card",
+    "assignedToMe": "Atribuidos a mim",
+    "emptyHeading": "Nenhum lead ainda",
+    "emptyBody": "Crie um card manualmente ou configure uma automacao para que leads aparecam automaticamente no seu pipeline.",
+    "emptyCta": "Criar primeiro card",
+    "emptyColumn": "Nenhum card neste estagio"
+  },
+  "card": {
+    "form": {
+      "contactName": "Nome do contato",
+      "contactNamePlaceholder": "Ex: Joao Silva",
+      "stage": "Estagio",
+      "channel": "Canal de origem",
+      "agent": "Agente responsavel",
+      "chatwootLink": "Link da conversa",
+      "submit": "Criar card",
+      "cancel": "Descartar card"
+    },
+    "deleteConfirm": "Excluir card: Tem certeza que deseja excluir o card de \"{contactName}\"?"
+  },
+  "stage": {
+    "namePlaceholder": "Nome do estagio",
+    "menu": {
+      "rename": "Renomear",
+      "changeColor": "Cor do estagio",
+      "delete": "Excluir estagio"
+    },
+    "deleteConfirmEmpty": "Excluir estagio: Tem certeza que deseja excluir \"{name}\"? Esta acao nao pode ser desfeita.",
+    "deleteConfirmWithCards": "Excluir estagio: Este estagio tem {count} card(s). Escolha para qual estagio deseja move-los antes de excluir."
+  },
+  "filter": {
+    "agent": "Agente",
+    "channel": "Canal",
+    "dateRange": "Periodo",
+    "clearAll": "Limpar filtros"
+  },
+  "toast": {
+    "genericError": "Algo deu errado. Tente novamente.",
+    "dragFail": "Nao foi possivel mover o card. Ele voltou para a posicao original.",
+    "loadFail": "Erro ao carregar o pipeline. Verifique sua conexao e recarregue a pagina.",
+    "cardCreated": "Card criado com sucesso",
+    "cardMoved": "Card movido para {stageName}",
+    "stageCreated": "Estagio criado",
+    "stageDeleted": "Estagio excluido"
+  },
+  "slidePanel": {
+    "openInChatwoot": "Abrir conversa no Chatwoot",
+    "close": "Fechar",
+    "expand": "Expandir"
+  },
+  "accessibility": {
+    "addCardToStage": "Adicionar card neste estagio",
+    "addCard": "Adicionar card",
+    "addNewStage": "Adicionar novo estagio",
+    "newStage": "Novo estagio",
+    "stageMenu": "Menu do estagio {stageName}",
+    "stageOptions": "Opcoes do estagio",
+    "fieldVisibility": "Configurar campos visiveis",
+    "fieldVisibilityShort": "Campos visiveis",
+    "closePanel": "Fechar painel",
+    "expandPanel": "Expandir para modal"
+  }
+}
