@@ -208,7 +208,9 @@ const tailwindConfig = {
       'modal-backdrop-dark': 'rgba(0, 0, 0, 0.6)',
       current: 'currentColor',
       ...colors,
-      body: slateDark.slate7,
+      'background-dark': '#0A0A0F',
+      'background-light': '#F5F5F7',
+      body: '#0A0A0F',
     },
     keyframes: {
       ...defaultTheme.keyframes,
