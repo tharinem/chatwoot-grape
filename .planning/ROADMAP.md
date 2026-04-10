@@ -60,10 +60,11 @@ Plans:
   1. An n8n workflow can POST conversation data to the Kanban API and a card appears on the board
   2. Sending the same conversation_id twice does not create a duplicate card
   3. The API responds to webhook POSTs in under 100ms (immediate acknowledgment, async processing if needed)
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- Schema extensions (ApiKey model, Card idempotency constraint), BullMQ/ioredis install, Redis config, API key helpers, Zod schemas
+- [ ] 03-02-PLAN.md -- API key auth plugin, BullMQ queue/worker, webhook endpoint, API key management routes, app wiring
 
 ### Phase 4: Kanban Frontend
 **Goal**: Users can visually manage their lead pipeline through a drag-and-drop Kanban board with filtering and manual card creation
@@ -108,6 +109,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 |-------|----------------|--------|-----------|
 | 1. Fork Infrastructure | 0/2 | Planned | - |
 | 2. Kanban API & Auth | 3/3 | Complete   | 2026-04-10 |
-| 3. n8n Card Creation | 0/1 | Not started | - |
+| 3. n8n Card Creation | 0/2 | Planning complete | - |
 | 4. Kanban Frontend | 0/3 | Not started | - |
 | 5. Chatwoot Embedding | 0/2 | Not started | - |
