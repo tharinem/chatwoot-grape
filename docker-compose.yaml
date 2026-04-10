@@ -40,6 +40,8 @@ services:
       - SMTP_USERNAME=${CHATWOOT_SMTP_USERNAME}
       - SMTP_PASSWORD=${CHATWOOT_SMTP_PASSWORD}
       - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE:-local}
+      - INSTALLATION_PRICING_PLAN=enterprise
+      - CHATWOOT_EDITION=enterprise
     entrypoint: docker/entrypoints/rails.sh
     command: ['sh', '-c', 'bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0']
     healthcheck:
@@ -77,6 +79,8 @@ services:
       - SMTP_USERNAME=${CHATWOOT_SMTP_USERNAME}
       - SMTP_PASSWORD=${CHATWOOT_SMTP_PASSWORD}
       - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE:-local}
+      - INSTALLATION_PRICING_PLAN=enterprise
+      - CHATWOOT_EDITION=enterprise
     command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
     healthcheck:
       test: ["CMD-SHELL", "bundle exec rails runner 'puts Sidekiq.redis(&:info)' > /dev/null 2>&1"]
