@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Stage {
+  id        String   @id @default(cuid())
+  accountId Int      @map("account_id")
+  name      String
+  position  Int
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cards Card[]
+
+  @@unique([accountId, position])
+  @@index([accountId])
+  @@map("stages")
+}
+
+model Card {
+  id             String    @id @default(cuid())
+  accountId      Int       @map("account_id")
+  stageId        String    @map("stage_id")
+  contactName    String    @map("contact_name")
+  conversationId Int?      @map("conversation_id")
+  channelType    String?   @map("channel_type")
+  assigneeId     Int?      @map("assignee_id")
+  position       Int       @default(0)
+  customFields   Json?     @map("custom_fields")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  stage Stage @relation(fields: [stageId], references: [id])
+
+  @@index([accountId, stageId])
+  @@index([accountId, conversationId])
+  @@index([accountId, deletedAt])
+  @@map("cards")
+}
