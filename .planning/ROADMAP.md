@@ -49,7 +49,7 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md -- Project scaffold, Prisma schema, Chatwoot token exchange auth flow with JWT and tenant middleware
-- [ ] 02-02-PLAN.md -- Stages CRUD with admin guards, reorder, and Swagger documentation
+- [x] 02-02-PLAN.md -- Stages CRUD with admin guards, reorder, and Swagger documentation
 - [ ] 02-03-PLAN.md -- Cards CRUD with cursor pagination, soft delete, and stage movement
 
 ### Phase 3: n8n Card Creation

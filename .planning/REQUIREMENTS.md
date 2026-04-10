@@ -28,7 +28,7 @@
 - [ ] **API-01**: API REST permite criar cards via POST com dados da conversa (usado pelo n8n)
 - [ ] **API-02**: Criação de card é idempotente — mesma conversation_id não gera card duplicado
 - [ ] **API-03**: API responde em menos de 100ms para webhooks do n8n (acknowledge rápido)
-- [ ] **API-04**: Documentação OpenAPI/Swagger auto-gerada e acessível via browser
+- [x] **API-04**: Documentação OpenAPI/Swagger auto-gerada e acessível via browser
 - [ ] **API-05**: API permite listar, atualizar e mover cards entre estágios
 
 ### Autenticação
@@ -41,8 +41,8 @@
 ### Multi-Tenant
 
 - [x] **TENANT-01**: Todas as queries de dados do Kanban filtram por account_id (enforced no middleware, não apenas na aplicação)
-- [ ] **TENANT-02**: Token de uma conta não pode acessar dados de outra conta (validação cross-tenant)
-- [ ] **TENANT-03**: Estágios do pipeline são configurados por conta — conta A e conta B têm pipelines independentes
+- [x] **TENANT-02**: Token de uma conta não pode acessar dados de outra conta (validação cross-tenant)
+- [x] **TENANT-03**: Estágios do pipeline são configurados por conta — conta A e conta B têm pipelines independentes
 
 ### Embedding no Chatwoot
 
@@ -103,15 +103,15 @@
 | API-01 | Phase 3 | Pending |
 | API-02 | Phase 3 | Pending |
 | API-03 | Phase 3 | Pending |
-| API-04 | Phase 2 | Pending |
+| API-04 | Phase 2 | Complete |
 | API-05 | Phase 2 | Pending |
 | AUTH-01 | Phase 2 | Complete |
 | AUTH-02 | Phase 2 | Complete |
 | AUTH-03 | Phase 2 | Complete |
 | AUTH-04 | Phase 2 | Complete |
 | TENANT-01 | Phase 2 | Complete |
-| TENANT-02 | Phase 2 | Pending |
-| TENANT-03 | Phase 2 | Pending |
+| TENANT-02 | Phase 2 | Complete |
+| TENANT-03 | Phase 2 | Complete |
 | EMBED-01 | Phase 5 | Pending |
 | EMBED-02 | Phase 5 | Pending |
 | EMBED-03 | Phase 5 | Pending |
