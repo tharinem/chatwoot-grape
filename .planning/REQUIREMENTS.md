@@ -88,40 +88,40 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FORK-01 | — | Pending |
-| FORK-02 | — | Pending |
-| FORK-03 | — | Pending |
-| FORK-04 | — | Pending |
-| KANB-01 | — | Pending |
-| KANB-02 | — | Pending |
-| KANB-03 | — | Pending |
-| KANB-04 | — | Pending |
-| KANB-05 | — | Pending |
-| KANB-06 | — | Pending |
-| KANB-07 | — | Pending |
-| KANB-08 | — | Pending |
-| API-01 | — | Pending |
-| API-02 | — | Pending |
-| API-03 | — | Pending |
-| API-04 | — | Pending |
-| API-05 | — | Pending |
-| AUTH-01 | — | Pending |
-| AUTH-02 | — | Pending |
-| AUTH-03 | — | Pending |
-| AUTH-04 | — | Pending |
-| TENANT-01 | — | Pending |
-| TENANT-02 | — | Pending |
-| TENANT-03 | — | Pending |
-| EMBED-01 | — | Pending |
-| EMBED-02 | — | Pending |
-| EMBED-03 | — | Pending |
-| EMBED-04 | — | Pending |
+| FORK-01 | Phase 1 | Pending |
+| FORK-02 | Phase 1 | Pending |
+| FORK-03 | Phase 1 | Pending |
+| FORK-04 | Phase 1 | Pending |
+| KANB-01 | Phase 4 | Pending |
+| KANB-02 | Phase 4 | Pending |
+| KANB-03 | Phase 4 | Pending |
+| KANB-04 | Phase 4 | Pending |
+| KANB-05 | Phase 4 | Pending |
+| KANB-06 | Phase 4 | Pending |
+| KANB-07 | Phase 4 | Pending |
+| KANB-08 | Phase 4 | Pending |
+| API-01 | Phase 3 | Pending |
+| API-02 | Phase 3 | Pending |
+| API-03 | Phase 3 | Pending |
+| API-04 | Phase 2 | Pending |
+| API-05 | Phase 2 | Pending |
+| AUTH-01 | Phase 2 | Pending |
+| AUTH-02 | Phase 2 | Pending |
+| AUTH-03 | Phase 2 | Pending |
+| AUTH-04 | Phase 2 | Pending |
+| TENANT-01 | Phase 2 | Pending |
+| TENANT-02 | Phase 2 | Pending |
+| TENANT-03 | Phase 2 | Pending |
+| EMBED-01 | Phase 5 | Pending |
+| EMBED-02 | Phase 5 | Pending |
+| EMBED-03 | Phase 5 | Pending |
+| EMBED-04 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 28 total
-- Mapped to phases: 0
-- Unmapped: 28 ⚠️ (will be mapped during roadmap creation)
+- Mapped to phases: 28
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial definition*
+*Last updated: 2026-04-09 after roadmap creation*
