@@ -29,11 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. The fork repository has a custom Dockerfile that builds successfully from source
   3. Only 3-4 files differ from upstream Chatwoot, documented in UPSTREAM_DIFF.md
   4. A developer can follow the documented procedure to pull upstream changes and merge without breaking customizations
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Fork repo setup, docker-compose build-from-source, upstream diff documentation
+- [ ] 01-02-PLAN.md -- Deploy fork on Coolify and verify functional parity
 
 ### Phase 2: Kanban API & Auth
 **Goal**: A standalone Fastify API exists that authenticates users via Chatwoot tokens, issues scoped JWTs, and enforces multi-tenant data isolation on all endpoints
@@ -106,7 +106,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fork Infrastructure | 0/2 | Not started | - |
+| 1. Fork Infrastructure | 0/2 | Planned | - |
 | 2. Kanban API & Auth | 0/3 | Not started | - |
 | 3. n8n Card Creation | 0/1 | Not started | - |
 | 4. Kanban Frontend | 0/3 | Not started | - |
