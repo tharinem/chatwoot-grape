@@ -8,6 +8,8 @@ const {
 } = require('@egoist/tailwindcss-icons');
 
 const defaultSansFonts = [
+  '"DM Sans"',
+  'Inter',
   '-apple-system',
   'system-ui',
   'BlinkMacSystemFont',
