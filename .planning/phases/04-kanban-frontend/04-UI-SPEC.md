@@ -53,7 +53,7 @@ Exceptions:
 | Role | Size | Weight | Line Height | Tailwind Class |
 |------|------|--------|-------------|----------------|
 | Body | 14px | 400 (regular) | 1.5 | `text-sm font-normal` |
-| Label | 12px | 460 | 1.4 | `text-xs font-[460]` |
+| Label | 12px | 400 (regular) | 1.4 | `text-xs font-normal` |
 | Heading | 16px | 600 (semibold) | 1.25 | `text-base font-semibold` |
 | Display | 20px | 600 (semibold) | 1.2 | `text-xl font-semibold` |
 
@@ -63,7 +63,7 @@ Exceptions:
 - **Body:** Card contact name, filter labels, form field values, toast messages
 - **Label:** Card metadata (channel, date, agent), column card count, helper text
 
-**Source:** Chatwoot uses custom font weights 420/440/460/520 (see `tailwind.config.js`). We use 460 for labels (slightly heavier than normal) and standard 600 for headings. DM Sans is the primary font per D-13.
+**Weights:** 2 weights only -- 400 (regular) and 600 (semibold). Labels are differentiated from body text by their smaller size (12px vs 14px), which provides sufficient visual distinction without a third weight. DM Sans is the primary font per D-13.
 
 ---
 
@@ -83,16 +83,37 @@ Exceptions:
 4. Drag drop-zone highlight border
 
 **Neutral palette usage (n-slate scale):**
-- `text-n-slate-12` — Primary text (contact names, headings)
-- `text-n-slate-11` — Secondary text (labels, metadata, placeholders)
-- `text-n-slate-9` — Tertiary/disabled text
-- `border-n-weak` — Card borders, column dividers
-- `border-n-strong` — Focused input borders, active column header
-- `bg-n-alpha-2` — Hover states on ghost buttons and cards
+- `text-n-slate-12` -- Primary text (contact names, headings)
+- `text-n-slate-11` -- Secondary text (labels, metadata, placeholders)
+- `text-n-slate-9` -- Tertiary/disabled text
+- `border-n-weak` -- Card borders, column dividers
+- `border-n-strong` -- Focused input borders, active column header
+- `bg-n-alpha-2` -- Hover states on ghost buttons and cards
 
 **Dark mode:** Automatically handled via `darkMode: 'class'` on the Tailwind config. All color references use CSS vars with `n.` prefix which resolve correctly in both modes. No separate dark palette needed.
 
 **Source:** D-12, D-13 from CONTEXT.md; `theme/colors.js` n-palette; Button.vue STYLE_CONFIG.
+
+---
+
+## Visual Hierarchy
+
+**Primary focal point:** The KanbanBoard column area occupies the central viewport and is the primary visual anchor. Columns with their color-coded top borders and card stacks draw the eye first.
+
+**Secondary focal point:** The "Novo card" CTA button in the BoardTopBar. It uses the accent color (`bg-n-brand`) against the neutral top bar, creating a clear action entry point.
+
+**Accessibility: icon-only button requirements:**
+
+All icon-only buttons MUST have an `aria-label` attribute and a visible tooltip on hover (200ms delay). Specific declarations:
+
+| Button | Icon | `aria-label` | Tooltip text |
+|--------|------|--------------|--------------|
+| Add card (column header) | `i-lucide-plus` | `Adicionar card neste estagio` | `Adicionar card` |
+| Add stage (end of board) | `i-lucide-plus` | `Adicionar novo estagio` | `Novo estagio` |
+| Column menu trigger | `i-lucide-ellipsis` | `Menu do estagio {stage_name}` | `Opcoes do estagio` |
+| Field visibility toggle | `i-lucide-sliders-horizontal` | `Configurar campos visiveis` | `Campos visiveis` |
+| Close slide panel | `i-lucide-x` | `Fechar painel` | `Fechar` |
+| Expand slide panel | `i-lucide-maximize-2` | `Expandir para modal` | `Expandir` |
 
 ---
 
@@ -124,7 +145,7 @@ All user-facing copy in Portuguese (BR), consistent with REQUIREMENTS.md languag
 | Card form: agent label | Agente responsavel |
 | Card form: chatwoot link label | Link da conversa |
 | Card form: submit | Criar card |
-| Card form: cancel | Cancelar |
+| Card form: cancel | Descartar card |
 | Filter: agent | Agente |
 | Filter: channel | Canal |
 | Filter: date range | Periodo |
@@ -259,7 +280,7 @@ Components needed for this phase, following Chatwoot `components-next/` patterns
 
 | Registry | Blocks Used | Safety Gate |
 |----------|-------------|-------------|
-| shadcn official | none | not applicable — project uses Chatwoot design system |
+| shadcn official | none | not applicable -- project uses Chatwoot design system |
 | Third-party | none | not applicable |
 
 **Note:** This is a standalone Vue 3 SPA that replicates Chatwoot's design tokens and patterns but does NOT use shadcn. The Tailwind config will mirror the relevant subset of Chatwoot's `theme/colors.js` and `tailwind.config.js` for visual consistency. No component registry is used.
