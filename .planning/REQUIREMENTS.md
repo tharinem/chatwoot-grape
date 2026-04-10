@@ -20,7 +20,7 @@
 - [x] **KANB-04**: Card exibe nome do contato, canal de origem, data de entrada e agente responsável
 - [x] **KANB-05**: Card contém link direto para a conversa original no Chatwoot
 - [x] **KANB-06**: Usuário pode filtrar cards por agente atribuído (ex: "atribuídos a mim")
-- [ ] **KANB-07**: Board exibe empty state claro quando não há cards com orientação de próximo passo
+- [x] **KANB-07**: Board exibe empty state claro quando não há cards com orientação de próximo passo
 - [x] **KANB-08**: Usuário pode criar um card manualmente no board (sem depender do n8n)
 
 ### API & Integração
@@ -98,7 +98,7 @@
 | KANB-04 | Phase 4 | Complete |
 | KANB-05 | Phase 4 | Complete |
 | KANB-06 | Phase 4 | Complete |
-| KANB-07 | Phase 4 | Pending |
+| KANB-07 | Phase 4 | Complete |
 | KANB-08 | Phase 4 | Complete |
 | API-01 | Phase 3 | Complete |
 | API-02 | Phase 3 | Complete |
