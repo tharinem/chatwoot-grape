@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { chatwootTokenSchema, tokenResponseSchema } from '../../schemas/auth.js';
 import { validateChatwootToken } from '../../services/chatwoot-auth.js';
 import { seedDefaultStages } from '../../services/stage-seed.js';
+import { seedApiKey } from '../../services/api-key-seed.js';
 import { problemResponse } from '../../lib/errors.js';
 import prisma from '../../lib/prisma.js';
 
@@ -30,6 +31,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
 
     await seedDefaultStages(prisma, account_id);
+    const apiKeyRaw = await seedApiKey(prisma, account_id);
 
     const token = fastify.jwt.sign(
       {
@@ -40,6 +42,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
       { expiresIn: '1h' }
     );
 
-    return { token };
+    return { token, ...(apiKeyRaw ? { api_key: apiKeyRaw } : {}) };
   });
 }

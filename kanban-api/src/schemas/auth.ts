@@ -7,6 +7,7 @@ export const chatwootTokenSchema = z.object({
 
 export const tokenResponseSchema = z.object({
   token: z.string(),
+  api_key: z.string().optional(),
 });
 
 export type ChatwootTokenInput = z.infer<typeof chatwootTokenSchema>;
