@@ -63,7 +63,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 03-01-PLAN.md -- Schema extensions (ApiKey model, Card idempotency constraint), BullMQ/ioredis install, Redis config, API key helpers, Zod schemas
+- [x] 03-01-PLAN.md -- Schema extensions (ApiKey model, Card idempotency constraint), BullMQ/ioredis install, Redis config, API key helpers, Zod schemas
 - [ ] 03-02-PLAN.md -- API key auth plugin, BullMQ queue/worker, webhook endpoint, API key management routes, app wiring
 
 ### Phase 4: Kanban Frontend

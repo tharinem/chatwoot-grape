@@ -25,8 +25,8 @@
 
 ### API & Integração
 
-- [ ] **API-01**: API REST permite criar cards via POST com dados da conversa (usado pelo n8n)
-- [ ] **API-02**: Criação de card é idempotente — mesma conversation_id não gera card duplicado
+- [x] **API-01**: API REST permite criar cards via POST com dados da conversa (usado pelo n8n)
+- [x] **API-02**: Criação de card é idempotente — mesma conversation_id não gera card duplicado
 - [ ] **API-03**: API responde em menos de 100ms para webhooks do n8n (acknowledge rápido)
 - [x] **API-04**: Documentação OpenAPI/Swagger auto-gerada e acessível via browser
 - [x] **API-05**: API permite listar, atualizar e mover cards entre estágios
@@ -100,8 +100,8 @@
 | KANB-06 | Phase 4 | Pending |
 | KANB-07 | Phase 4 | Pending |
 | KANB-08 | Phase 4 | Pending |
-| API-01 | Phase 3 | Pending |
-| API-02 | Phase 3 | Pending |
+| API-01 | Phase 3 | Complete |
+| API-02 | Phase 3 | Complete |
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 2 | Complete |
 | API-05 | Phase 2 | Complete |
