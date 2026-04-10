@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 2 context gathered
-last_updated: "2026-04-10T03:59:52.054Z"
-last_activity: 2026-04-09 -- Roadmap created
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-04-10T04:35:01.696Z"
+last_activity: 2026-04-10
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 2
-  completed_plans: 1
+  total_plans: 5
+  completed_plans: 2
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Clientes gerenciam leads em um pipeline Kanban visual, com cards criados automaticamente via n8n quando conversas chegam no Chatwoot -- sem alternar de ferramenta.
-**Current focus:** Phase 1: Fork Infrastructure
+**Current focus:** Phase 02 — kanban-api-auth
 
 ## Current Position
 
-Phase: 1 of 5 (Fork Infrastructure)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-04-09 -- Roadmap created
+Phase: 02 (kanban-api-auth) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-04-10
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 02 P01 | 7min | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Kanban API + Auth + Tenant isolation built as single Fastify service (not separate)
 - [Roadmap]: n8n card creation is a separate phase to validate webhook flow end-to-end
 - [Roadmap]: Phases 3 and 4 can run in parallel (both depend on Phase 2, not each other)
+- [Phase 02]: Used fastify-type-provider-zod@5 (not @6) to stay on Zod 3.x per research recommendation
+- [Phase 02]: Chatwoot auth uses api_access_token header, JWT contains user_id/account_id/role with 1h expiry
 
 ### Pending Todos
 
@@ -74,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-10T03:59:52.047Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-kanban-api-auth/02-CONTEXT.md
+Last session: 2026-04-10T04:35:01.690Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

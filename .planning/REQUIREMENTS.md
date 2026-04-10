@@ -33,14 +33,14 @@
 
 ### Autenticação
 
-- [ ] **AUTH-01**: Usuário logado no Chatwoot acessa o Kanban sem segundo login (auth compartilhado)
-- [ ] **AUTH-02**: Token do Chatwoot é validado server-side via chamada à API do Chatwoot (/api/v1/profile)
-- [ ] **AUTH-03**: Kanban API emite JWT próprio de curta duração (1h) após validação — nunca persiste o token do Chatwoot
-- [ ] **AUTH-04**: Toda requisição à Kanban API é scoped ao account_id extraído do JWT
+- [x] **AUTH-01**: Usuário logado no Chatwoot acessa o Kanban sem segundo login (auth compartilhado)
+- [x] **AUTH-02**: Token do Chatwoot é validado server-side via chamada à API do Chatwoot (/api/v1/profile)
+- [x] **AUTH-03**: Kanban API emite JWT próprio de curta duração (1h) após validação — nunca persiste o token do Chatwoot
+- [x] **AUTH-04**: Toda requisição à Kanban API é scoped ao account_id extraído do JWT
 
 ### Multi-Tenant
 
-- [ ] **TENANT-01**: Todas as queries de dados do Kanban filtram por account_id (enforced no middleware, não apenas na aplicação)
+- [x] **TENANT-01**: Todas as queries de dados do Kanban filtram por account_id (enforced no middleware, não apenas na aplicação)
 - [ ] **TENANT-02**: Token de uma conta não pode acessar dados de outra conta (validação cross-tenant)
 - [ ] **TENANT-03**: Estágios do pipeline são configurados por conta — conta A e conta B têm pipelines independentes
 
@@ -105,11 +105,11 @@
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 2 | Pending |
 | API-05 | Phase 2 | Pending |
-| AUTH-01 | Phase 2 | Pending |
-| AUTH-02 | Phase 2 | Pending |
-| AUTH-03 | Phase 2 | Pending |
-| AUTH-04 | Phase 2 | Pending |
-| TENANT-01 | Phase 2 | Pending |
+| AUTH-01 | Phase 2 | Complete |
+| AUTH-02 | Phase 2 | Complete |
+| AUTH-03 | Phase 2 | Complete |
+| AUTH-04 | Phase 2 | Complete |
+| TENANT-01 | Phase 2 | Complete |
 | TENANT-02 | Phase 2 | Pending |
 | TENANT-03 | Phase 2 | Pending |
 | EMBED-01 | Phase 5 | Pending |
