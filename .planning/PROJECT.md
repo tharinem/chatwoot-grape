@@ -15,6 +15,9 @@ Clientes devem conseguir gerenciar leads em um pipeline Kanban visual, com cards
 - [x] API REST própria para criação e gestão de cards (usada pelo n8n) — Validated in Phase 02: kanban-api-auth
 - [x] Autenticação compartilhada — usuário logado no Chatwoot acessa os módulos sem novo login — Validated in Phase 02: kanban-api-auth (token exchange flow)
 - [x] Colunas/estágios do pipeline configuráveis por conta — Validated in Phase 02: kanban-api-auth (stages CRUD with tenant isolation)
+- [x] Endpoint para criação de card via n8n quando nova conversa chega no Chatwoot — Validated in Phase 03: n8n-card-creation (webhook + BullMQ worker)
+- [x] Idempotência na criação de cards (mesmo conversation_id não duplica) — Validated in Phase 03: n8n-card-creation (upsert com unique constraint)
+- [x] Resposta rápida ao webhook (<100ms) com processamento assíncrono — Validated in Phase 03: n8n-card-creation (202 Accepted + BullMQ)
 
 ### Active
 
@@ -84,4 +87,4 @@ Este documento evolui a cada transição de fase e marco de milestone.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after Phase 02 completion*
+*Last updated: 2026-04-10 after Phase 03 completion*
