@@ -80,7 +80,7 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 04-01-PLAN.md -- Project scaffold: Vite + Vue 3 + TypeScript, Tailwind with Chatwoot design tokens, app shell
+- [x] 04-01-PLAN.md -- Project scaffold: Vite + Vue 3 + TypeScript, Tailwind with Chatwoot design tokens, app shell
 - [ ] 04-02-PLAN.md -- Types, API client with JWT auth, Pinia stores, composables, router, i18n translations
 - [ ] 04-03-PLAN.md -- Board layout, KanbanBoard/Column/Card components with drag-and-drop, empty states, toast system
 - [ ] 04-04-PLAN.md -- Stage management UI, filter bar, card creation form, slide panel, field visibility, wiring + human verification

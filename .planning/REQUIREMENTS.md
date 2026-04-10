@@ -14,8 +14,8 @@
 
 ### Kanban Board
 
-- [ ] **KANB-01**: Usuário pode visualizar pipeline de leads como um board Kanban com colunas representando estágios
-- [ ] **KANB-02**: Usuário pode mover cards entre colunas via drag-and-drop
+- [x] **KANB-01**: Usuário pode visualizar pipeline de leads como um board Kanban com colunas representando estágios
+- [x] **KANB-02**: Usuário pode mover cards entre colunas via drag-and-drop
 - [ ] **KANB-03**: Admin pode criar, renomear, reordenar e deletar estágios do pipeline por conta
 - [ ] **KANB-04**: Card exibe nome do contato, canal de origem, data de entrada e agente responsável
 - [ ] **KANB-05**: Card contém link direto para a conversa original no Chatwoot
@@ -92,8 +92,8 @@
 | FORK-02 | Phase 1 | Pending |
 | FORK-03 | Phase 1 | Pending |
 | FORK-04 | Phase 1 | Pending |
-| KANB-01 | Phase 4 | Pending |
-| KANB-02 | Phase 4 | Pending |
+| KANB-01 | Phase 4 | Complete |
+| KANB-02 | Phase 4 | Complete |
 | KANB-03 | Phase 4 | Pending |
 | KANB-04 | Phase 4 | Pending |
 | KANB-05 | Phase 4 | Pending |
