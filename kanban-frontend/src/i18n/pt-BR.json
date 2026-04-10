@@ -28,8 +28,8 @@
       "changeColor": "Cor do estagio",
       "delete": "Excluir estagio"
     },
-    "deleteConfirmEmpty": "Excluir estagio: Tem certeza que deseja excluir \"{name}\"? Esta acao nao pode ser desfeita.",
-    "deleteConfirmWithCards": "Excluir estagio: Este estagio tem {count} card(s). Escolha para qual estagio deseja move-los antes de excluir."
+    "deleteConfirmWithCards": "Este estagio tem {count} card(s). Escolha para qual estagio deseja move-los antes de excluir.",
+    "deleteConfirmEmpty": "Tem certeza que deseja excluir \"{name}\"? Esta acao nao pode ser desfeita."
   },
   "filter": {
     "agent": "Agente",
@@ -47,20 +47,22 @@
     "stageDeleted": "Estagio excluido"
   },
   "slidePanel": {
-    "openInChatwoot": "Abrir conversa no Chatwoot",
-    "close": "Fechar",
-    "expand": "Expandir"
+    "openInChatwoot": "Abrir conversa no Chatwoot"
   },
-  "accessibility": {
+  "aria": {
     "addCardToStage": "Adicionar card neste estagio",
-    "addCard": "Adicionar card",
     "addNewStage": "Adicionar novo estagio",
-    "newStage": "Novo estagio",
     "stageMenu": "Menu do estagio {stageName}",
-    "stageOptions": "Opcoes do estagio",
     "fieldVisibility": "Configurar campos visiveis",
-    "fieldVisibilityShort": "Campos visiveis",
     "closePanel": "Fechar painel",
     "expandPanel": "Expandir para modal"
+  },
+  "tooltip": {
+    "addCard": "Adicionar card",
+    "newStage": "Novo estagio",
+    "stageOptions": "Opcoes do estagio",
+    "fieldVisibility": "Campos visiveis",
+    "close": "Fechar",
+    "expand": "Expandir"
   }
 }
