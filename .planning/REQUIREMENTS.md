@@ -29,7 +29,7 @@
 - [ ] **API-02**: Criação de card é idempotente — mesma conversation_id não gera card duplicado
 - [ ] **API-03**: API responde em menos de 100ms para webhooks do n8n (acknowledge rápido)
 - [x] **API-04**: Documentação OpenAPI/Swagger auto-gerada e acessível via browser
-- [ ] **API-05**: API permite listar, atualizar e mover cards entre estágios
+- [x] **API-05**: API permite listar, atualizar e mover cards entre estágios
 
 ### Autenticação
 
@@ -104,7 +104,7 @@
 | API-02 | Phase 3 | Pending |
 | API-03 | Phase 3 | Pending |
 | API-04 | Phase 2 | Complete |
-| API-05 | Phase 2 | Pending |
+| API-05 | Phase 2 | Complete |
 | AUTH-01 | Phase 2 | Complete |
 | AUTH-02 | Phase 2 | Complete |
 | AUTH-03 | Phase 2 | Complete |
