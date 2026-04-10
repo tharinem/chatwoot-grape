@@ -1,4 +1,13 @@
 {
+  "login": {
+    "title": "Login",
+    "chatwootToken": "Token do Chatwoot",
+    "accountId": "Account ID",
+    "submit": "Entrar",
+    "submitting": "Autenticando...",
+    "invalidAccountId": "Account ID deve ser um numero positivo",
+    "authFailed": "Falha na autenticacao. Verifique suas credenciais."
+  },
   "board": {
     "title": "Pipeline de Leads",
     "newCard": "Novo card",
@@ -6,7 +15,8 @@
     "emptyHeading": "Nenhum lead ainda",
     "emptyBody": "Crie um card manualmente ou configure uma automacao para que leads aparecam automaticamente no seu pipeline.",
     "emptyCta": "Criar primeiro card",
-    "emptyColumn": "Nenhum card neste estagio"
+    "emptyColumn": "Nenhum card neste estagio",
+    "retryCta": "Tentar novamente"
   },
   "card": {
     "form": {
