@@ -32,13 +32,17 @@ App Vue 3 standalone (SPA) que consome a API Kanban (fases 2-3) para exibir um b
 - **D-10:** Empty state com mensagem central "Nenhum lead ainda", botao "Criar card manualmente", e texto explicando que cards tambem sao criados automaticamente via automacao (nao mencionar n8n — detalhe tecnico interno).
 - **D-11:** Criacao manual de card via dois pontos de entrada: botao '+' no header de cada coluna E botao global "Novo card" no header do board.
 
+### Cores e Visual
+- **D-12:** Cores sutis e configuraveis por estagio — borda colorida fina no topo de cada coluna. Admin pode configurar a cor via color picker. Resto do board neutro usando paleta `n-slate` do Chatwoot.
+- **D-13:** Seguir o design system do Chatwoot: cores via CSS vars com prefixo `n.` (ex: `text-n-slate-12`, `bg-n-brand`), dark mode via classe `dark`, fontes DM Sans/Inter.
+- **D-14:** Icones Lucide via classes `i-lucide-*` — mesmo sistema usado pelo Chatwoot moderno. Consistencia total com a plataforma.
+
 ### Branding
-- **D-12:** Nao mencionar "n8n" em nenhum texto user-facing. Usar "automacao" ou termos genericos. n8n e detalhe de implementacao, nao produto.
+- **D-15:** Nao mencionar "n8n" em nenhum texto user-facing. Usar "automacao" ou termos genericos. n8n e detalhe de implementacao, nao produto.
 
 ### Claude's Discretion
 - Escolha de biblioteca de drag-and-drop (vue-draggable, dnd-kit, etc.)
 - Estrutura de pastas do projeto Vue 3 (router, stores, composables)
-- Biblioteca de componentes UI (Tailwind UI, Headless UI, ou components customizados)
 - Estrategia de state management (Pinia, composables, etc.)
 - Formato exato do formulario de criacao de card
 
@@ -60,6 +64,12 @@ App Vue 3 standalone (SPA) que consome a API Kanban (fases 2-3) para exibir um b
 - `kanban-api/src/schemas/card.ts` — Zod schemas para request/response de cards
 - `kanban-api/src/routes/v1/stages.ts` — CRUD de estagios com reorder
 
+### Design System do Chatwoot (referencia visual obrigatoria)
+- `tailwind.config.js` — Configuracao Tailwind com plugin de icones e cores `n.`
+- `theme/colors.js` — Definicoes de cores do sistema
+- `app/javascript/dashboard/components-next/button/Button.vue` — Padrao de componente (variants, props, Tailwind)
+- `app/javascript/dashboard/components-next/icon/Icon.vue` — Componente de icone
+
 ### Projeto
 - `.planning/PROJECT.md` — Constraints: deploy Coolify, multi-tenant por account_id, auth compartilhado
 - `.planning/REQUIREMENTS.md` — Out of Scope inclui bulk actions e WIP limits
@@ -70,10 +80,19 @@ App Vue 3 standalone (SPA) que consome a API Kanban (fases 2-3) para exibir um b
 ## Existing Code Insights
 
 ### Reusable Assets
-- Nenhum frontend existe ainda — app Vue 3 greenfield
+- Nenhum frontend Kanban existe ainda — app Vue 3 greenfield
 - Backend API completo com Swagger docs para referencia de endpoints
+- Chatwoot `components-next/` como referencia de padroes de componentes (Button, Icon, Dialog, etc.)
 
-### Established Patterns (do backend, para manter consistencia)
+### Chatwoot Design System (MUST follow)
+- Cores: CSS vars com prefixo `n.` — `n-slate-{1..12}`, `n-brand` (#7B5EA7), `n-blue`, `n-ruby`, `n-amber`, `n-teal`
+- Icones: Lucide via `i-lucide-*` classes (plugin `@egoist/tailwindcss-icons`)
+- Fontes: DM Sans / Inter / InterDisplay
+- Dark mode: `darkMode: 'class'` no Tailwind
+- Tailwind only — zero custom CSS, zero scoped CSS, zero inline styles
+- Composition API com `<script setup>` em todos componentes
+
+### Established Patterns (do backend, para manter consistencia na API)
 - Snake_case nos request bodies da API, camelCase interno
 - Cursor pagination: `?cursor=abc&limit=50`
 - JWT auth com 1h expiry, re-auth silenciosa via token Chatwoot
