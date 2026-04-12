@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Stage {
-  id        String   @id @default(cuid())
-  accountId Int      @map("account_id")
-  name      String
-  position  Int
-  color     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  accountId   Int      @map("account_id")
+  name        String
+  position    Int
+  color       String?
+  probability Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   cards Card[]
 
@@ -32,12 +33,19 @@ model Card {
   channelType    String?   @map("channel_type")
   assigneeId     Int?      @map("assignee_id")
   position       Int       @default(0)
-  customFields   Json?     @map("custom_fields")
+  dealValue      Float?    @map("deal_value")
+  priority       String?
+  nextFollowUp   DateTime? @map("next_follow_up")
+  agentName      String?   @map("agent_name")
+  agentAvatar    String?   @map("agent_avatar")
+  customFields   String?   @map("custom_fields")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  stage Stage @relation(fields: [stageId], references: [id])
+  stage      Stage      @relation(fields: [stageId], references: [id])
+  notes      Note[]
+  activities Activity[]
 
   @@index([accountId, stageId])
   @@index([accountId, conversationId])
@@ -46,12 +54,37 @@ model Card {
   @@map("cards")
 }
 
+model Note {
+  id        String   @id @default(cuid())
+  cardId    String   @map("card_id")
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cardId])
+  @@map("card_notes")
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  cardId    String   @map("card_id")
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  action    String
+  fromStage String?  @map("from_stage")
+  toStage   String?  @map("to_stage")
+  agent     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cardId])
+  @@map("card_activities")
+}
+
 model ApiKey {
   id        String    @id @default(cuid())
   accountId Int       @map("account_id")
   keyHash   String    @map("key_hash")
   salt      String
-  prefix    String    @db.VarChar(8)
+  prefix    String
   createdAt DateTime  @default(now()) @map("created_at")
   revokedAt DateTime? @map("revoked_at")
 

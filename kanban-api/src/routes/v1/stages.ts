@@ -19,9 +19,7 @@ export default async function stageRoutes(fastify: FastifyInstance) {
   // GET /stages — all authenticated roles
   fastify.get('/stages', {
     onRequest: [fastify.authenticate],
-    schema: {
-      response: { 200: z.array(stageSchema.extend({ _count: z.object({ cards: z.number() }).optional() })) },
-    },
+    schema: {},
   }, async (request) => {
     const { account_id } = request.user as JwtPayload;
     const stages = await prisma.stage.findMany({
@@ -37,7 +35,6 @@ export default async function stageRoutes(fastify: FastifyInstance) {
     onRequest: [fastify.authenticate],
     schema: {
       body: createStageSchema,
-      response: { 201: stageSchema },
     },
   }, async (request, reply) => {
     const { account_id, role } = request.user as JwtPayload;
@@ -69,7 +66,6 @@ export default async function stageRoutes(fastify: FastifyInstance) {
     onRequest: [fastify.authenticate],
     schema: {
       body: reorderStagesSchema,
-      response: { 200: z.array(stageSchema) },
     },
   }, async (request, reply) => {
     const { account_id, role } = request.user as JwtPayload;
@@ -102,7 +98,6 @@ export default async function stageRoutes(fastify: FastifyInstance) {
     schema: {
       params: stageParamsSchema,
       body: updateStageSchema,
-      response: { 200: stageSchema },
     },
   }, async (request, reply) => {
     const { account_id, role } = request.user as JwtPayload;

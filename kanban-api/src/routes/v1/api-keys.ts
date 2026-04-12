@@ -9,9 +9,7 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
   // POST /api-keys — Generate new API key (admin only, revokes existing)
   fastify.post('/api-keys', {
     onRequest: [fastify.authenticate],
-    schema: {
-      response: { 200: createApiKeyResponseSchema },
-    },
+    schema: {},
   }, async (request, reply) => {
     const { account_id, role } = request.user as JwtPayload;
 

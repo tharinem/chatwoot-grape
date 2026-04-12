@@ -10,7 +10,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/chatwoot-token', {
     schema: {
       body: chatwootTokenSchema,
-      response: { 200: tokenResponseSchema },
     },
   }, async (request, reply) => {
     const { chatwoot_token, account_id } = request.body as {

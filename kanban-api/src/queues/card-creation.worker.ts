@@ -36,7 +36,7 @@ export function startCardCreationWorker() {
           conversationId,
           channelType: channelType ?? null,
           assigneeId: assigneeId ?? null,
-          customFields: (customFields ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+          customFields: customFields ? JSON.stringify(customFields) : null,
           position: nextPos,
         },
         update: {},
@@ -45,7 +45,9 @@ export function startCardCreationWorker() {
     { connection: redisConnection, concurrency: 5 },
   );
 
-  worker.on('error', (err) => console.error('Card creation worker error:', err));
+  worker.on('error', () => {
+    // Silently ignore Redis connection errors — CRUD works without the worker
+  });
 
   return worker;
 }

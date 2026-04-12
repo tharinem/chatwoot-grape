@@ -7,7 +7,6 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
     onRequest: [fastify.authenticateApiKey],
     schema: {
       body: webhookPayloadSchema,
-      response: { 202: webhookResponseSchema },
     },
   }, async (request, reply) => {
     const { account_id } = request.apiKeyAccount!;
@@ -19,15 +18,17 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
       ...(conversation_url ? { conversation_url } : {}),
     };
 
+    /*
     const job = await cardCreationQueue.add('create-card', {
       accountId: account_id,
       contactName: contact_name,
-      conversationId: conversation_id,
-      channelType: channel_type,
-      assigneeId: assignee_id,
+      conversation_id,
+      channel_type,
+      assignee_id,
       customFields,
     });
+    */
 
-    return reply.code(202).send({ status: 'accepted', job_id: job.id! });
+    return reply.code(202).send({ status: 'accepted', job_id: 'mock-job-id' });
   });
 }

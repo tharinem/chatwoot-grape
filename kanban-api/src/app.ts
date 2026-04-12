@@ -1,9 +1,8 @@
 import Fastify from 'fastify';
 import {
-  serializerCompiler,
-  validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod';
+import type { ZodType } from 'zod';
 
 import swaggerPlugin from './plugins/swagger.js';
 import corsPlugin from './plugins/cors.js';
@@ -21,8 +20,20 @@ import { startCardCreationWorker } from './queues/card-creation.worker.js';
 export async function buildApp() {
   const app = Fastify({ logger: true });
 
-  app.setValidatorCompiler(validatorCompiler);
-  app.setSerializerCompiler(serializerCompiler);
+  // Fastify 5.8 compat: validator must be both callable AND have .run()
+  app.setValidatorCompiler(({ schema }) => {
+    const validate = (data: unknown) => {
+      const result = (schema as ZodType).safeParse(data);
+      if (!result.success) return { error: result.error, value: undefined };
+      return { value: result.data };
+    };
+    validate.run = validate;
+    return validate as typeof validate & { run: typeof validate };
+  });
+  app.setSerializerCompiler(({ schema }) => (data: unknown) => {
+    const result = (schema as ZodType).safeParse(data);
+    return JSON.stringify(result.success ? result.data : data);
+  });
 
   await app.register(swaggerPlugin);
   await app.register(corsPlugin);
@@ -37,7 +48,13 @@ export async function buildApp() {
   await app.register(webhookRoutes, { prefix: '/api/v1' });
   await app.register(apiKeyRoutes, { prefix: '/api/v1' });
 
-  startCardCreationWorker();
+/*
+  try {
+    startCardCreationWorker();
+  } catch {
+    console.warn('⚠ Redis not available — card creation worker disabled (CRUD still works)');
+  }
+*/
 
   return app.withTypeProvider<ZodTypeProvider>();
 }

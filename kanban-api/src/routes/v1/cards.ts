@@ -1,26 +1,40 @@
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import type { JwtPayload } from '../../middleware/tenant.js';
 import {
   createCardSchema,
   updateCardSchema,
   cardQuerySchema,
-  cardSchema,
-  paginatedCardsSchema,
   stageIdParamsSchema,
   cardIdParamsSchema,
 } from '../../schemas/card.js';
 import { problemResponse } from '../../lib/errors.js';
 import prisma from '../../lib/prisma.js';
-import { Prisma } from '@prisma/client';
 
 export default async function cardRoutes(fastify: FastifyInstance) {
+  // GET /cards — all cards for the account (D-09)
+  fastify.get('/cards', {
+    onRequest: [fastify.authenticate],
+    schema: {},
+  }, async (request) => {
+    const { account_id } = request.user as JwtPayload;
+    const cards = await prisma.card.findMany({
+      where: { accountId: account_id, deletedAt: null },
+      orderBy: { position: 'asc' },
+      include: {
+        notes: { orderBy: { createdAt: 'desc' } },
+        activities: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+    return cards;
+  });
+
   // GET /stages/:stageId/cards — list cards with cursor pagination (D-10)
   fastify.get('/stages/:stageId/cards', {
     onRequest: [fastify.authenticate],
     schema: {
       params: stageIdParamsSchema,
       querystring: cardQuerySchema,
-      response: { 200: paginatedCardsSchema },
     },
   }, async (request, reply) => {
     const { account_id } = request.user as JwtPayload;
@@ -40,6 +54,10 @@ export default async function cardRoutes(fastify: FastifyInstance) {
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { position: 'asc' },
+      include: {
+        notes: { orderBy: { createdAt: 'desc' } },
+        activities: { orderBy: { createdAt: 'desc' } },
+      },
     });
 
     const hasMore = cards.length > limit;
@@ -55,18 +73,11 @@ export default async function cardRoutes(fastify: FastifyInstance) {
     schema: {
       params: stageIdParamsSchema,
       body: createCardSchema,
-      response: { 201: cardSchema },
     },
   }, async (request, reply) => {
     const { account_id } = request.user as JwtPayload;
     const { stageId } = request.params as { stageId: string };
-    const body = request.body as {
-      contact_name: string;
-      conversation_id?: number;
-      channel_type?: string;
-      assignee_id?: number;
-      custom_fields?: Record<string, unknown>;
-    };
+    const body = request.body as any;
 
     // Verify stage belongs to this account
     const stage = await prisma.stage.findFirst({
@@ -91,9 +102,20 @@ export default async function cardRoutes(fastify: FastifyInstance) {
         conversationId: body.conversation_id ?? null,
         channelType: body.channel_type ?? null,
         assigneeId: body.assignee_id ?? null,
-        customFields: (body.custom_fields ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+        dealValue: body.deal_value ?? null,
+        priority: body.priority ?? null,
+        nextFollowUp: body.next_follow_up ? new Date(body.next_follow_up) : null,
+        agentName: body.agent_name ?? null,
+        agentAvatar: body.agent_avatar ?? null,
+        customFields: body.custom_fields ? JSON.stringify(body.custom_fields) : null,
         position: nextPos,
+        activities: {
+          create: {
+            action: `Criado em ${stage.name}`,
+          }
+        }
       },
+      include: { notes: true, activities: true }
     });
 
     return reply.code(201).send(card);
@@ -105,22 +127,80 @@ export default async function cardRoutes(fastify: FastifyInstance) {
     schema: {
       params: cardIdParamsSchema,
       body: updateCardSchema,
-      response: { 200: cardSchema },
     },
   }, async (request, reply) => {
     const { account_id } = request.user as JwtPayload;
     const { id } = request.params as { id: string };
-    const body = request.body as {
-      contact_name?: string;
-      stage_id?: string;
-      conversation_id?: number | null;
-      channel_type?: string | null;
-      assignee_id?: number | null;
-      position?: number;
-      custom_fields?: Record<string, unknown> | null;
-    };
+    const body = request.body as any;
 
     // Find card (tenant-scoped + soft delete filter)
+    const card = await prisma.card.findFirst({
+      where: { id, accountId: account_id, deletedAt: null },
+      include: { stage: true }
+    });
+    if (!card) {
+      return problemResponse(reply, 404, 'Not Found', 'Card not found');
+    }
+
+    // Process stage move and activity logging
+    let targetStageName = '';
+    if (body.stage_id !== undefined && body.stage_id !== card.stageId) {
+      const targetStage = await prisma.stage.findFirst({
+        where: { id: body.stage_id, accountId: account_id },
+      });
+      if (!targetStage) {
+        return problemResponse(reply, 404, 'Not Found', 'Target stage not found');
+      }
+      targetStageName = targetStage.name;
+    }
+
+    // Build update data — map snake_case to camelCase
+    const updateData: any = {};
+    if (body.contact_name !== undefined) updateData.contactName = body.contact_name;
+    if (body.stage_id !== undefined) updateData.stageId = body.stage_id;
+    if (body.conversation_id !== undefined) updateData.conversationId = body.conversation_id;
+    if (body.channel_type !== undefined) updateData.channelType = body.channel_type;
+    if (body.assignee_id !== undefined) updateData.assigneeId = body.assignee_id;
+    if (body.position !== undefined) updateData.position = body.position;
+    if (body.deal_value !== undefined) updateData.dealValue = body.deal_value;
+    if (body.priority !== undefined) updateData.priority = body.priority;
+    if (body.next_follow_up !== undefined) updateData.nextFollowUp = body.next_follow_up ? new Date(body.next_follow_up) : null;
+    if (body.agent_name !== undefined) updateData.agentName = body.agent_name;
+    if (body.agent_avatar !== undefined) updateData.agentAvatar = body.agent_avatar;
+    if (body.custom_fields !== undefined) updateData.customFields = body.custom_fields === null ? null : JSON.stringify(body.custom_fields);
+
+    // If moved, record activity
+    if (targetStageName) {
+      updateData.activities = {
+        create: {
+          action: `Movido de ${card.stage.name} → ${targetStageName}`,
+          fromStage: card.stage.name,
+          toStage: targetStageName,
+        }
+      };
+    }
+
+    const updated = await prisma.card.update({
+      where: { id },
+      data: updateData,
+      include: { notes: true, activities: true }
+    });
+
+    return updated;
+  });
+
+  // POST /cards/:id/notes — add note
+  fastify.post('/cards/:id/notes', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      params: cardIdParamsSchema,
+      body: z.object({ content: z.string() }),
+    },
+  }, async (request, reply) => {
+    const { account_id } = request.user as JwtPayload;
+    const { id } = request.params as { id: string };
+    const { content } = request.body as { content: string };
+
     const card = await prisma.card.findFirst({
       where: { id, accountId: account_id, deletedAt: null },
     });
@@ -128,32 +208,14 @@ export default async function cardRoutes(fastify: FastifyInstance) {
       return problemResponse(reply, 404, 'Not Found', 'Card not found');
     }
 
-    // If moving to a different stage, verify target stage belongs to same account
-    if (body.stage_id !== undefined) {
-      const targetStage = await prisma.stage.findFirst({
-        where: { id: body.stage_id, accountId: account_id },
-      });
-      if (!targetStage) {
-        return problemResponse(reply, 404, 'Not Found', 'Target stage not found');
-      }
-    }
-
-    // Build update data — map snake_case to camelCase
-    const updateData: Record<string, unknown> = {};
-    if (body.contact_name !== undefined) updateData.contactName = body.contact_name;
-    if (body.stage_id !== undefined) updateData.stageId = body.stage_id;
-    if (body.conversation_id !== undefined) updateData.conversationId = body.conversation_id;
-    if (body.channel_type !== undefined) updateData.channelType = body.channel_type;
-    if (body.assignee_id !== undefined) updateData.assigneeId = body.assignee_id;
-    if (body.position !== undefined) updateData.position = body.position;
-    if (body.custom_fields !== undefined) updateData.customFields = (body.custom_fields === null ? Prisma.JsonNull : body.custom_fields) as Prisma.InputJsonValue;
-
-    const updated = await prisma.card.update({
-      where: { id },
-      data: updateData,
+    const note = await prisma.note.create({
+      data: {
+        cardId: id,
+        content,
+      },
     });
 
-    return updated;
+    return reply.code(201).send(note);
   });
 
   // DELETE /cards/:id — soft delete (D-01: set deletedAt)

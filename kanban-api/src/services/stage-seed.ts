@@ -18,8 +18,9 @@ export async function seedDefaultStages(
   });
   if (existing > 0) return;
 
-  await prisma.stage.createMany({
-    data: DEFAULT_STAGES.map((s) => ({ ...s, accountId })),
-    skipDuplicates: true,
-  });
+  for (const s of DEFAULT_STAGES) {
+    await prisma.stage.create({
+      data: { ...s, accountId },
+    });
+  }
 }
