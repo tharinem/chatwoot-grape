@@ -27,7 +27,7 @@
 class Portal < ApplicationRecord
   include Rails.application.routes.url_helpers
 
-  DEFAULT_COLOR = '#1f93ff'.freeze
+  DEFAULT_COLOR = '#7B5EA7'.freeze
 
   belongs_to :account
   has_many :categories, dependent: :destroy_async
