@@ -22,9 +22,9 @@ Clientes devem conseguir gerenciar leads em um pipeline Kanban visual, com cards
 ### Active
 
 #### Fork e Deploy
-- [ ] Fork do Chatwoot no GitHub com Dockerfile customizado para build próprio
-- [ ] Deploy via Coolify apontando para o repositório fork (não a imagem oficial)
-- [ ] Coolify configura variáveis de ambiente idênticas ao setup atual
+- [x] Fork do Chatwoot no GitHub com Dockerfile customizado para build próprio — Validated in Phase 01: GitHub Actions CI/CD builds from custom branch and pushes to GHCR
+- [x] Deploy via Coolify apontando para o repositório fork (não a imagem oficial) — Validated in Phase 01: Coolify compose uses ghcr.io/tharinem/chatwoot-grape:custom
+- [x] Coolify configura variáveis de ambiente idênticas ao setup atual — Validated in Phase 01: same env vars preserved in compose
 
 #### Módulo Kanban (CRM Pipeline)
 - [ ] Aplicação separada (próprio domínio/serviço) acessível a partir do menu lateral do Chatwoot
@@ -36,7 +36,7 @@ Clientes devem conseguir gerenciar leads em um pipeline Kanban visual, com cards
 - [ ] Link de volta para a conversa original no Chatwoot
 
 #### Integração Chatwoot ↔ Módulos
-- [ ] Item no menu lateral do Chatwoot que abre o Kanban (iframe ou redirect)
+- [x] Item no menu lateral do Chatwoot que abre o Kanban (iframe ou redirect) — Validated in Phase 05: sidebar menu item + iframe embedding at /accounts/:id/kanban
 - [ ] Autenticação compartilhada — usuário logado no Chatwoot acessa os módulos sem novo login
 
 ### Out of Scope
@@ -87,4 +87,4 @@ Este documento evolui a cada transição de fase e marco de milestone.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after Phase 03 completion*
+*Last updated: 2026-04-12 after Phase 01 and Phase 05 (partial) completion*

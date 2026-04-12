@@ -3,55 +3,57 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-04-10T07:39:32.752Z"
-last_activity: 2026-04-10
+stopped_at: Phase 5 sidebar embedding complete, Phase 4 plan 04-04 pending
+last_updated: "2026-04-12T16:30:00.000Z"
+last_activity: 2026-04-12
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
   completed_plans: 9
-  percent: 50
+  percent: 82
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-09)
+See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Clientes gerenciam leads em um pipeline Kanban visual, com cards criados automaticamente via n8n quando conversas chegam no Chatwoot -- sem alternar de ferramenta.
-**Current focus:** Phase 04 — kanban-frontend
+**Current focus:** Phase 04 plan 04-04 (kanban-frontend stage management UI) + Phase 05 plan 05-02 (Dashboard App)
 
 ## Current Position
 
-Phase: 04 (kanban-frontend) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-04-10
+Phase: 04 (kanban-frontend) — plan 04-04 pending
+Phase: 05 (chatwoot-embedding) — plan 05-01 complete, 05-02 pending
+Status: Ready to execute remaining plans
+Last activity: 2026-04-12
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
+- Total plans completed: 9
+- Average duration: ~5min
+- Total execution time: ~43min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| Phase 01 | 2/2 | ~30min (manual) | ~15min |
+| Phase 02 | 3/3 | ~21min | ~7min |
+| Phase 03 | 2/2 | ~10min | ~5min |
+| Phase 04 | 3/4 | ~12min | ~4min |
+| Phase 05 | 1/2 | ~5min (manual) | ~5min |
 
 **Recent Trend:**
 
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
 | Phase 02 P01 | 7min | 2 tasks | 19 files |
 | Phase 02 P02 | 6min | 2 tasks | 3 files |
 | Phase 02 P03 | 8min | 2 tasks | 3 files |
@@ -60,6 +62,26 @@ Progress: [█████░░░░░] 50%
 | Phase 04 P01 | 3min | 1 tasks | 17 files |
 | Phase 04 P02 | 6min | 2 tasks | 16 files |
 | Phase 04 P03 | 3min | 2 tasks | 11 files |
+
+## What Was Done on 2026-04-12 (Outside GSD Flow)
+
+### Phase 1: Fork Infrastructure (COMPLETED)
+- Created GitHub Actions workflow (.github/workflows/publish_custom_docker.yml)
+- Builds and pushes to ghcr.io/tharinem/chatwoot-grape:custom
+- Fixed Dockerfile: node:24-alpine → node:22-alpine
+- Coolify compose updated to use GHCR image
+- Full branding customization:
+  - InstallationConfig: name, logos, URLs via Rails console
+  - Source code: primary color #1f93ff → #7B5EA7 (purple)
+  - Login page: logo h-8→h-12 (48px), text "Bem-vindo ao Grape Ai"
+  - Files changed: SCSS vars, SDK widget, EmojiInput, ChatInputWrap, Portal model
+
+### Phase 5: Chatwoot Embedding (PARTIAL)
+- Created iframe component: kanban/pages/KanbanIndex.vue
+- Created route: kanban/kanban.routes.js → /accounts/:id/kanban
+- Added sidebar menu item in Sidebar.vue (between Contacts and Companies)
+- Added i18n translations (en + pt_BR)
+- Registered route in dashboard.routes.js
 
 ## Accumulated Context
 
@@ -71,35 +93,29 @@ Recent decisions affecting current work:
 - [Roadmap]: Kanban API + Auth + Tenant isolation built as single Fastify service (not separate)
 - [Roadmap]: n8n card creation is a separate phase to validate webhook flow end-to-end
 - [Roadmap]: Phases 3 and 4 can run in parallel (both depend on Phase 2, not each other)
-- [Phase 02]: Used fastify-type-provider-zod@5 (not @6) to stay on Zod 3.x per research recommendation
-- [Phase 02]: Chatwoot auth uses api_access_token header, JWT contains user_id/account_id/role with 1h expiry
-- [Phase 02]: Used Prisma P2025 error code for not-found detection instead of separate findFirst
-- [Phase 02]: Reorder endpoint registered before /:id to avoid Fastify route conflict
-- [Phase 02]: Used Prisma.JsonNull cast for nullable JSON fields to satisfy Prisma strict typing
-- [Phase 02]: Snake_case API request bodies mapped to camelCase Prisma fields in route handlers
-- [Phase 03]: Redis config exported as ConnectionOptions object, not IORedis instance — BullMQ manages its own connections
-- [Phase 03]: API key uses SHA-256 with random salt and 8-char prefix for efficient prefix-based lookup
-- [Phase 03]: Worker uses empty update in upsert for idempotent no-op on duplicate conversation_id
-- [Phase 03]: Worker auto-resolves first stage by position ascending — no stage config needed for n8n flow
-- [Phase 03]: Auth response schema extended with optional api_key to surface raw key exactly once
-- [Phase 04]: Used Tailwind 3 with PostCSS plugin for stable @layer base CSS var support
-- [Phase 04]: Included full Chatwoot n.* color namespace (gray, violet, iris added beyond plan minimum) for complete design parity
-- [Phase 04]: Used dynamic import for auth store in 401 interceptor to avoid circular dependency
-- [Phase 04]: Restructured i18n from single accessibility section into separate aria/tooltip sections per UI-SPEC
-- [Phase 04]: Used data-card-id/data-stage-id HTML attributes for drag event extraction in vue-draggable-plus
-- [Phase 04]: KanbanColumn maintains localCards ref synced from props for vue-draggable-plus reactive list
+- [Phase 01]: GitHub Actions CI/CD to GHCR instead of building in Coolify compose
+- [Phase 01]: node:22-alpine LTS instead of node:24-alpine (not yet available)
+- [Phase 01]: Branding via InstallationConfig (DB) + source code changes for colors/text
+- [Phase 02]: Used fastify-type-provider-zod@5 (not @6) to stay on Zod 3.x
+- [Phase 02]: Chatwoot auth uses api_access_token header, JWT with 1h expiry
+- [Phase 03]: API key uses SHA-256 with random salt and 8-char prefix
+- [Phase 03]: Worker auto-resolves first stage by position ascending
+- [Phase 04]: Used Tailwind 3 with PostCSS plugin
 - [Phase 04]: Card click-vs-drag uses mousedown/mouseup flags with setTimeout(0)
+- [Phase 05]: Kanban embedded via iframe in Chatwoot dashboard (not Dashboard App)
+- [Phase 05]: Sidebar item uses i-lucide-kanban icon, placed between Contacts and Companies
 
 ### Pending Todos
 
-None yet.
+- Complete Phase 04 plan 04-04 (stage management UI, filters, card creation form)
+- Complete Phase 05 plan 05-02 (Dashboard App + seamless auth flow)
 
 ### Blockers/Concerns
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-04-10T07:39:32.749Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-04-12T16:30:00.000Z
+Stopped at: Phase 1 and Phase 5 (partial) completed. Phase 4 plan 04-04 is next.
 Resume file: None
