@@ -9,7 +9,10 @@ WORKDIR /app
 # Copy package files
 COPY package*.json pnpm-lock.yaml* ./
 
-# Install dependencies using pnpm
+# Force development mode for install to get Vite and other devDependencies
+ENV NODE_ENV=development
+
+# Install all dependencies using pnpm
 RUN pnpm install --no-frozen-lockfile
 
 # Copy the rest of the application

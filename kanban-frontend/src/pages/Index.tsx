@@ -8,20 +8,39 @@ export default function Index() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    // Check for credentials in URL (SaaS Integration)
+    // Check for credentials in URL (SaaS Integration Auto-Login)
     const params = new URLSearchParams(window.location.search);
     const urlToken = params.get('token');
     const urlAccountId = params.get('accountId');
 
     if (urlToken && urlAccountId) {
-      localStorage.setItem('grape_token', urlToken);
-      localStorage.setItem('grape_account_id', urlAccountId);
-      // Clean up URL to keep it pretty
+      // Clean up URL to keep it pretty before doing the background fetch
       window.history.replaceState({}, document.title, window.location.pathname);
-      setIsAuth(true);
+      
+      // Auto-authenticate in the background: Exchange Chatwoot token for Grape JWT
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1'}/auth/chatwoot-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatwoot_token: urlToken,
+          account_id: parseInt(urlAccountId, 10),
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('grape_token', data.token);
+          localStorage.setItem('grape_account_id', urlAccountId);
+          setIsAuth(true);
+        }
+      })
+      .catch((err) => {
+        console.error('Auto-login failed', err);
+      });
       return;
     }
 
+    // Normal check if already logged in previously
     const token = localStorage.getItem('grape_token');
     if (token) setIsAuth(true);
   }, []);

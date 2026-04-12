@@ -12,7 +12,7 @@ export async function validateChatwootToken(
 ): Promise<ChatwootProfile | null> {
   try {
     const response = await fetch(
-      `${process.env.CHATWOOT_BASE_URL}/api/v1/profile`,
+      `${process.env.CHATWOOT_URL || process.env.CHATWOOT_BASE_URL}/api/v1/profile`,
       {
         headers: { api_access_token: token },
       }

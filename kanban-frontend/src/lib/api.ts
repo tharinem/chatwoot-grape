@@ -15,8 +15,11 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   if (response.status === 401) {
     localStorage.removeItem('grape_token');
-    window.location.href = '/login';
-    throw new Error('Não autorizado');
+    // Não redirecionar se estivermos tentando fazer o login para não quebrar a tela
+    if (!endpoint.includes('/auth/chatwoot-token')) {
+      window.location.href = '/';
+    }
+    throw new Error('Token inválido ou não autorizado');
   }
 
   if (!response.ok) {
