@@ -16,8 +16,10 @@ services:
       retries: 5
 
   api:
+    image: ${DOCKER_IMAGE_API:-kanban-api:latest}
     build:
       context: ./kanban-api
+      dockerfile: Dockerfile
     container_name: kanban-api
     restart: always
     depends_on:
@@ -32,8 +34,10 @@ services:
       - "3001"
 
   frontend:
+    image: ${DOCKER_IMAGE_FRONTEND:-kanban-frontend:latest}
     build:
       context: ./kanban-frontend
+      dockerfile: Dockerfile
       args:
         - VITE_API_URL=${VITE_API_URL}
     container_name: kanban-frontend
