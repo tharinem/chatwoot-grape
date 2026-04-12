@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: kanban-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-grapeuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grapepass}
+      POSTGRES_DB: ${POSTGRES_DB:-kanbandb}
+    volumes:
+      - kanban_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grapeuser -d kanbandb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./kanban-api
+    container_name: kanban-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-grapeuser}:${POSTGRES_PASSWORD:-grapepass}@db:5432/${POSTGRES_DB:-kanbandb}
+      CHATWOOT_URL: ${CHATWOOT_URL}
+      NODE_ENV: production
+      PORT: 3001
+    expose:
+      - "3001"
+
+  frontend:
+    build:
+      context: ./kanban-frontend
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: kanban-frontend
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  kanban_data:
