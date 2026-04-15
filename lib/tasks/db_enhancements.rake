@@ -3,6 +3,7 @@ Rake::Task['db:migrate'].enhance do
   if ActiveRecord::Base.connection.table_exists? 'installation_configs'
     puts 'Loading Installation config'
     ConfigLoader.new.process
+    Rake::Task['grape:branding'].invoke
   end
 end
 
