@@ -128,7 +128,7 @@ class Article < ApplicationRecord
 
   def increment_view_count
     # rubocop:disable Rails/SkipsModelValidations
-    update_column(:views, views? ? views + 1 : 1)
+    self.class.where(id: id).update_all('views = COALESCE(views, 0) + 1')
     # rubocop:enable Rails/SkipsModelValidations
   end
 

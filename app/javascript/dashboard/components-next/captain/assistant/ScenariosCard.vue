@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useToggle, useElementSize } from '@vueuse/core';
 import { useVuelidate } from '@vuelidate/core';
 import { required, minLength } from '@vuelidate/validators';
+import DOMPurify from 'dompurify';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -116,11 +117,13 @@ const instructionError = computed(() =>
 const LINK_INSTRUCTION_CLASS =
   '[&_a[href^="tool://"]]:text-n-iris-11 [&_a:not([href^="tool://"])]:text-n-slate-12 [&_a]:pointer-events-none [&_a]:cursor-default';
 
-const renderInstruction = instruction => () =>
-  h('p', {
+const renderInstruction = instruction => () => {
+  const sanitized = DOMPurify.sanitize(instruction);
+  return h('p', {
     class: `text-sm text-n-slate-12 py-4 mb-0 prose prose-sm min-w-0 break-words max-w-none ${LINK_INSTRUCTION_CLASS}`,
-    innerHTML: instruction,
+    innerHTML: sanitized,
   });
+};
 </script>
 
 <template>

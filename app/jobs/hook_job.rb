@@ -17,7 +17,7 @@ class HookJob < MutexApplicationJob
       process_leadsquared_integration_with_lock(hook, event_name, event_data)
     end
   rescue StandardError => e
-    Rails.logger.error e
+    ChatwootExceptionTracker.new(e, account: hook&.account).capture_exception
   end
 
   private
