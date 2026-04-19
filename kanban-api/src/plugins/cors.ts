@@ -5,5 +5,6 @@ export default fp(async function corsPlugin(fastify) {
   await fastify.register(fastifyCors, {
     origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   });
 });
