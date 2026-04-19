@@ -6,6 +6,14 @@ import { seedApiKey } from '../../services/api-key-seed.js';
 import { problemResponse } from '../../lib/errors.js';
 import prisma from '../../lib/prisma.js';
 
+function resolveBaseUrl(): string {
+  return (
+    process.env.CHATWOOT_URL ??
+    process.env.CHATWOOT_BASE_URL ??
+    'https://app.chatwoot.com'
+  );
+}
+
 export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/auth/chatwoot-token', {
     schema: {
@@ -28,6 +36,18 @@ export default async function authRoutes(fastify: FastifyInstance) {
     if (!accountMembership) {
       return problemResponse(reply, 403, 'Forbidden', 'Not a member of this account');
     }
+
+    // Ensure per-tenant config row exists. First login for an account creates
+    // the row with the server-wide default baseUrl; admin can change it later
+    // via PATCH /accounts/me.
+    await prisma.account.upsert({
+      where: { id: account_id },
+      update: {},
+      create: {
+        id: account_id,
+        chatwootBaseUrl: resolveBaseUrl(),
+      },
+    });
 
     await seedDefaultStages(prisma, account_id);
     const apiKeyRaw = await seedApiKey(prisma, account_id);

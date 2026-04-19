@@ -11,6 +11,7 @@ import authPlugin from './plugins/auth.js';
 import apiKeyAuthPlugin from './plugins/api-key-auth.js';
 import healthRoutes from './routes/health.js';
 import authRoutes from './routes/v1/auth.js';
+import accountRoutes from './routes/v1/accounts.js';
 import stageRoutes from './routes/v1/stages.js';
 import cardRoutes from './routes/v1/cards.js';
 import webhookRoutes from './routes/v1/webhooks.js';
@@ -43,6 +44,7 @@ export async function buildApp() {
 
   await app.register(healthRoutes);
   await app.register(authRoutes, { prefix: '/api/v1' });
+  await app.register(accountRoutes, { prefix: '/api/v1' });
   await app.register(stageRoutes, { prefix: '/api/v1' });
   await app.register(cardRoutes, { prefix: '/api/v1' });
   await app.register(webhookRoutes, { prefix: '/api/v1' });

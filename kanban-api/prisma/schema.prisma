@@ -7,6 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Per-tenant config. One row per Chatwoot account id.
+/// Created on first successful login via /auth/chatwoot-token.
+model Account {
+  id                    Int       @id
+  /// Base URL of the Chatwoot instance this account belongs to.
+  /// Multi-tenant: some customers run self-hosted Chatwoot at their own domain.
+  chatwootBaseUrl       String    @map("chatwoot_base_url")
+  /// Admin-configured Chatwoot API access token for server-to-server calls,
+  /// used to enrich webhook payloads with custom_attributes.
+  /// Encrypted at rest with AES-256-GCM (see src/services/crypto.ts).
+  /// Null means "not configured yet" — webhook falls back to payload-only data.
+  chatwootApiToken      String?   @map("chatwoot_api_token")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
 model Stage {
   id          String   @id @default(cuid())
   accountId   Int      @map("account_id")
@@ -30,6 +48,8 @@ model Card {
   stageId        String    @map("stage_id")
   contactName    String    @map("contact_name")
   conversationId Int?      @map("conversation_id")
+  /// Chatwoot contact id (needed to fetch custom_attributes independently of conversation).
+  contactId      Int?      @map("contact_id")
   channelType    String?   @map("channel_type")
   assigneeId     Int?      @map("assignee_id")
   position       Int       @default(0)
@@ -39,6 +59,9 @@ model Card {
   agentName      String?   @map("agent_name")
   agentAvatar    String?   @map("agent_avatar")
   customFields   String?   @map("custom_fields")
+  /// True when upstream contact/conversation in Chatwoot was deleted but the
+  /// card still exists locally (sales history preservation).
+  isOrphan       Boolean   @default(false) @map("is_orphan")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
@@ -50,6 +73,7 @@ model Card {
   @@index([accountId, stageId])
   @@index([accountId, conversationId])
   @@unique([accountId, conversationId])
+  @@index([accountId, contactId])
   @@index([accountId, deletedAt])
   @@map("cards")
 }
