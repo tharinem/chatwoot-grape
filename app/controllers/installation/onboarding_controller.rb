@@ -1,7 +1,9 @@
 class Installation::OnboardingController < ApplicationController
   before_action :ensure_installation_onboarding
 
-  def index; end
+  def index
+    @global_config = GlobalConfig.get('INSTALLATION_NAME', 'LOGO', 'LOGO_DARK')
+  end
 
   def create
     begin

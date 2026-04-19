@@ -38,6 +38,7 @@ Rails.application.routes.draw do
   end
 
   get '/health', to: 'health#show'
+  get '/manifest.json', to: 'pwa#manifest', defaults: { format: :json }
   get '/api', to: 'api#index'
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
