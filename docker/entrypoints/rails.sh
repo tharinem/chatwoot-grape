@@ -30,5 +30,11 @@ do
   sleep 2;
 done
 
+# Apply Grape Ai branding after database is ready
+if [ "$RAILS_ENV" = "production" ]; then
+  echo "Applying Grape Ai branding..."
+  bundle exec rake grape:branding 2>/dev/null || true
+fi
+
 # Execute the main process of the container
 exec "$@"
