@@ -15,6 +15,16 @@
 #  index_installation_configs_on_name_and_created_at  (name,created_at) UNIQUE
 #
 class InstallationConfig < ApplicationRecord
+  GRAPE_BRANDING = {
+    'INSTALLATION_NAME' => 'Grape Ai',
+    'BRAND_NAME' => 'Grape Ai',
+    'LOGO' => 'https://i.ibb.co/hFLSfwg6/Group-1.png',
+    'LOGO_DARK' => 'https://i.ibb.co/Nn3Z5mMw/Group-3.png',
+    'LOGO_THUMBNAIL' => 'https://i.ibb.co/tMLg0FFJ/Group-2.png',
+    'BRAND_URL' => 'https://www.reengenhariadigital.com.br',
+    'WIDGET_BRAND_URL' => 'https://www.reengenhariadigital.com.br'
+  }.freeze
+
   # https://stackoverflow.com/questions/72970170/upgrading-to-rails-6-1-6-1-causes-psychdisallowedclass-tried-to-load-unspecif
   # https://discuss.rubyonrails.org/t/cve-2022-32224-possible-rce-escalation-bug-with-serialized-columns-in-active-record/81017
   # FIX ME : fixes breakage of installation config. we need to migrate.
@@ -22,6 +32,7 @@ class InstallationConfig < ApplicationRecord
   serialize :serialized_value, coder: YAML, type: ActiveSupport::HashWithIndifferentAccess
 
   before_validation :set_lock
+  before_save :enforce_grape_branding
   validates :name, presence: true
   validate :saml_sso_users_check, if: -> { name == 'ENABLE_SAML_SSO_LOGIN' }
 
@@ -50,6 +61,12 @@ class InstallationConfig < ApplicationRecord
 
   def set_lock
     self.locked = true if locked.nil?
+  end
+
+  def enforce_grape_branding
+    return unless GRAPE_BRANDING.key?(name)
+
+    self.serialized_value = { 'value' => GRAPE_BRANDING[name] }.with_indifferent_access
   end
 
   def clear_cache
