@@ -14,14 +14,16 @@ declare module 'fastify' {
 
 export default fp(async function apiKeyAuthPlugin(fastify: FastifyInstance) {
   fastify.decorate('authenticateApiKey', async function (request: FastifyRequest, reply: FastifyReply) {
-    const apiKey = request.headers['x-api-key'] as string | undefined;
+    const headerKey = request.headers['x-api-key'] as string | undefined;
+    const queryKey = (request.query as { api_key?: string } | undefined)?.api_key;
+    const apiKey = headerKey || queryKey;
 
     if (!apiKey) {
       return reply.code(401).send({
         type: 'https://kanban.api/errors/unauthorized',
         title: 'Unauthorized',
         status: 401,
-        detail: 'Missing x-api-key header',
+        detail: 'Missing x-api-key header or api_key query param',
       });
     }
 
