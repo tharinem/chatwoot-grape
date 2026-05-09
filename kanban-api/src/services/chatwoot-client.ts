@@ -73,21 +73,22 @@ export async function pingChatwoot(opts: FetchOpts): Promise<{ ok: boolean; stat
 }
 
 /**
- * Marker used in content_attributes to identify messages originated from the
+ * Marker used in content_attributes to identify items originated from the
  * Kanban side. Lets the webhook handler skip echo-back to prevent infinite loops.
  */
 export const KANBAN_NOTE_SOURCE = 'grape_kanban';
 
 /**
- * Create a private note on a Chatwoot conversation. Used by the Kanban "add note"
- * flow to mirror notes back to Chatwoot. Best-effort: returns null on any failure.
+ * Create a contact note in Chatwoot (Contact > Notes tab). Used by the Kanban
+ * "add note" flow to mirror notes back to Chatwoot. Best-effort: returns null
+ * on any failure.
  */
-export async function createPrivateNote(
-  conversationId: number,
+export async function createContactNote(
+  contactId: number,
   content: string,
   opts: FetchOpts,
 ): Promise<{ id: number } | null> {
-  const url = `${opts.baseUrl.replace(/\/$/, '')}/api/v1/accounts/${opts.accountId}/conversations/${conversationId}/messages`;
+  const url = `${opts.baseUrl.replace(/\/$/, '')}/api/v1/accounts/${opts.accountId}/contacts/${contactId}/notes`;
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -95,12 +96,7 @@ export async function createPrivateNote(
         api_access_token: opts.apiToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        content,
-        message_type: 'outgoing',
-        private: true,
-        content_attributes: { source: KANBAN_NOTE_SOURCE },
-      }),
+      body: JSON.stringify({ content }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { id: number };

@@ -10,7 +10,7 @@ import {
 } from '../../schemas/card.js';
 import { problemResponse } from '../../lib/errors.js';
 import prisma from '../../lib/prisma.js';
-import { createPrivateNote } from '../../services/chatwoot-client.js';
+import { createContactNote } from '../../services/chatwoot-client.js';
 import { tryDecryptSecret } from '../../services/crypto.js';
 
 export default async function cardRoutes(fastify: FastifyInstance) {
@@ -217,13 +217,13 @@ export default async function cardRoutes(fastify: FastifyInstance) {
       },
     });
 
-    // Best-effort mirror to Chatwoot as a private note. Failures don't break
-    // the response — the local note is the source of truth.
-    if (card.conversationId) {
+    // Best-effort mirror to Chatwoot as a contact note (Contact > Notes tab).
+    // Failures don't break the response — the local note is the source of truth.
+    if (card.contactId) {
       const account = await prisma.account.findUnique({ where: { id: account_id } });
       const apiToken = account ? tryDecryptSecret(account.chatwootApiToken) : null;
       if (account && apiToken) {
-        createPrivateNote(card.conversationId, content, {
+        createContactNote(card.contactId, content, {
           baseUrl: account.chatwootBaseUrl,
           accountId: account_id,
           apiToken,
