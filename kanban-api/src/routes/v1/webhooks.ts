@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { Prisma } from '@prisma/client';
 import prisma from '../../lib/prisma.js';
 import { tryDecryptSecret } from '../../services/crypto.js';
-import { fetchContact, fetchConversation } from '../../services/chatwoot-client.js';
+import { fetchContact, fetchConversation, KANBAN_NOTE_SOURCE } from '../../services/chatwoot-client.js';
 import {
   webhookPayloadSchema,
   webhookResponseSchema,
@@ -301,6 +301,37 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
             status: 'accepted',
             action: cardId ? 'conversation_deleted:orphaned' : 'conversation_deleted:not-found',
             card_id: cardId ?? undefined,
+          });
+        }
+
+        case 'message_created': {
+          // Mirror Chatwoot private notes back to the corresponding card.
+          // Skip if not private, no content, or the message originated from
+          // the Kanban side (loop prevention via content_attributes.source).
+          if (!payload.private) {
+            return send(reply, 200, { status: 'ignored', action: 'message_created:not-private' });
+          }
+          const sourceMarker = (payload.content_attributes as { source?: string } | undefined)?.source;
+          if (sourceMarker === KANBAN_NOTE_SOURCE) {
+            return send(reply, 200, { status: 'ignored', action: 'message_created:kanban-origin' });
+          }
+          if (!conversationId || !payload.content) {
+            return send(reply, 200, { status: 'ignored', action: 'message_created:incomplete' });
+          }
+          const card = await prisma.card.findFirst({
+            where: { accountId: account_id, conversationId, deletedAt: null },
+            select: { id: true },
+          });
+          if (!card) {
+            return send(reply, 200, { status: 'ignored', action: 'message_created:no-card' });
+          }
+          await prisma.note.create({
+            data: { cardId: card.id, content: payload.content },
+          });
+          return send(reply, 202, {
+            status: 'accepted',
+            action: 'message_created:note-mirrored',
+            card_id: card.id,
           });
         }
       }

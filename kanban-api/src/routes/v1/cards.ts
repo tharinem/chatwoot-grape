@@ -10,6 +10,8 @@ import {
 } from '../../schemas/card.js';
 import { problemResponse } from '../../lib/errors.js';
 import prisma from '../../lib/prisma.js';
+import { createPrivateNote } from '../../services/chatwoot-client.js';
+import { tryDecryptSecret } from '../../services/crypto.js';
 
 export default async function cardRoutes(fastify: FastifyInstance) {
   // GET /cards — all cards for the account (D-09)
@@ -214,6 +216,22 @@ export default async function cardRoutes(fastify: FastifyInstance) {
         content,
       },
     });
+
+    // Best-effort mirror to Chatwoot as a private note. Failures don't break
+    // the response — the local note is the source of truth.
+    if (card.conversationId) {
+      const account = await prisma.account.findUnique({ where: { id: account_id } });
+      const apiToken = account ? tryDecryptSecret(account.chatwootApiToken) : null;
+      if (account && apiToken) {
+        createPrivateNote(card.conversationId, content, {
+          baseUrl: account.chatwootBaseUrl,
+          accountId: account_id,
+          apiToken,
+        }).catch(() => {
+          // swallow — Chatwoot might be offline; local note already saved
+        });
+      }
+    }
 
     return reply.code(201).send(note);
   });

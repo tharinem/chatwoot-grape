@@ -14,6 +14,7 @@ export const webhookEventSchema = z.enum([
   'conversation_deleted',
   'contact_updated',
   'contact_deleted',
+  'message_created',
 ]);
 
 /**
@@ -70,6 +71,13 @@ export const webhookPayloadSchema = z.object({
   phone: z.string().max(50).optional(),
   email: z.string().optional(),
   conversation_url: z.string().optional(),
+
+  // Message-level fields (for message_created event mirroring private notes)
+  id: z.number().int().positive().optional(),
+  content: z.string().optional(),
+  message_type: z.union([z.string(), z.number()]).optional(),
+  private: z.boolean().optional(),
+  content_attributes: z.record(z.unknown()).optional(),
 }).passthrough();
 
 export const webhookResponseSchema = z.object({
