@@ -22,6 +22,10 @@ COPY . .
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
+# Build argument for the Chatwoot base URL (used to build links to conversation/contact)
+ARG VITE_CHATWOOT_URL
+ENV VITE_CHATWOOT_URL=$VITE_CHATWOOT_URL
+
 # Build the production version
 RUN pnpm run build
 

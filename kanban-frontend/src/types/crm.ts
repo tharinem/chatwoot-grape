@@ -34,6 +34,7 @@ export interface CRMCard {
   agentName?: string;
   agentAvatar?: string;
   conversationId?: string;
+  contactId?: string;
   nextFollowUp?: string;
   notes: Note[];
   activityLog: ActivityLog[];

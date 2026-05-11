@@ -13,6 +13,22 @@ function timeAgo(dateStr: string): string {
   return `há ${days} dias`;
 }
 
+const CHATWOOT_URL = (import.meta.env.VITE_CHATWOOT_URL ?? '').replace(/\/$/, '');
+
+function chatwootConversationUrl(conversationId: string): string | null {
+  if (!CHATWOOT_URL) return null;
+  const accountId = localStorage.getItem('grape_account_id');
+  if (!accountId) return null;
+  return `${CHATWOOT_URL}/app/accounts/${accountId}/conversations/${conversationId}`;
+}
+
+function chatwootContactUrl(contactId: string): string | null {
+  if (!CHATWOOT_URL) return null;
+  const accountId = localStorage.getItem('grape_account_id');
+  if (!accountId) return null;
+  return `${CHATWOOT_URL}/app/accounts/${accountId}/contacts/${contactId}`;
+}
+
 interface Props {
   card: CRMCard | null;
   stages: Stage[];
@@ -102,13 +118,44 @@ export function DetailPanel({ card, stages, onClose, onUpdate, onMoveCard, onAdd
                   <Section title="Contato">
                     <Row label="Canal"><ChannelIcon channel={card.channel} /><span className="text-sm capitalize">{card.channel === 'none' ? 'Sem canal' : card.channel}</span></Row>
                     {card.agentName && <Row label="Agente"><span className="text-sm">{card.agentName}</span></Row>}
-                    {card.conversationId && (
-                      <Row label="Chatwoot">
-                        <a href="#" className="text-sm text-primary flex items-center gap-1 hover:underline">
-                          #{card.conversationId} <ExternalLink size={12} />
-                        </a>
-                      </Row>
-                    )}
+                    {card.conversationId && (() => {
+                      const url = chatwootConversationUrl(card.conversationId);
+                      return (
+                        <Row label="Conversa">
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary flex items-center gap-1 hover:underline"
+                            >
+                              #{card.conversationId} <ExternalLink size={12} />
+                            </a>
+                          ) : (
+                            <span className="text-sm">#{card.conversationId}</span>
+                          )}
+                        </Row>
+                      );
+                    })()}
+                    {card.contactId && (() => {
+                      const url = chatwootContactUrl(card.contactId);
+                      return (
+                        <Row label="Contato">
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary flex items-center gap-1 hover:underline"
+                            >
+                              Abrir no Chatwoot <ExternalLink size={12} />
+                            </a>
+                          ) : (
+                            <span className="text-sm">#{card.contactId}</span>
+                          )}
+                        </Row>
+                      );
+                    })()}
                     <Row label="Criado"><span className="text-sm text-muted-foreground">{timeAgo(card.createdAt)}</span></Row>
                   </Section>
 

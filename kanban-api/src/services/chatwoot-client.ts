@@ -79,16 +79,16 @@ export async function pingChatwoot(opts: FetchOpts): Promise<{ ok: boolean; stat
 export const KANBAN_NOTE_SOURCE = 'grape_kanban';
 
 /**
- * Create a contact note in Chatwoot (Contact > Notes tab). Used by the Kanban
- * "add note" flow to mirror notes back to Chatwoot. Best-effort: returns null
- * on any failure.
+ * Create a private note on a Chatwoot conversation (the "Nota privada" tab).
+ * Used by the Kanban "add note" flow to mirror notes back to Chatwoot.
+ * Best-effort: returns null on any failure.
  */
-export async function createContactNote(
-  contactId: number,
+export async function createPrivateNote(
+  conversationId: number,
   content: string,
   opts: FetchOpts,
 ): Promise<{ id: number } | null> {
-  const url = `${opts.baseUrl.replace(/\/$/, '')}/api/v1/accounts/${opts.accountId}/contacts/${contactId}/notes`;
+  const url = `${opts.baseUrl.replace(/\/$/, '')}/api/v1/accounts/${opts.accountId}/conversations/${conversationId}/messages`;
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -96,7 +96,12 @@ export async function createContactNote(
         api_access_token: opts.apiToken,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({
+        content,
+        message_type: 'outgoing',
+        private: true,
+        content_attributes: { source: KANBAN_NOTE_SOURCE },
+      }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { id: number };

@@ -28,6 +28,7 @@ export function useCRM() {
       contactName: c.contactName,
       channel: (c.channelType || 'none') as Channel,
       conversationId: c.conversationId?.toString(),
+      contactId: c.contactId?.toString(),
       dealValue: c.dealValue || 0,
       priority: c.priority || undefined,
       nextFollowUp: c.nextFollowUp || undefined,
