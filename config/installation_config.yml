@@ -19,23 +19,23 @@
   display_title: 'Installation Name'
   description: 'The installation wide name that would be used in the dashboard, title etc.'
 - name: LOGO_THUMBNAIL
-  value: 'https://i.ibb.co/tMLg0FFJ/Group-2.png'
+  value: '/brand-assets/grape-thumbnail.png'
   display_title: 'Logo Thumbnail'
   description: 'The thumbnail that would be used for favicon (512px X 512px)'
 - name: LOGO
-  value: 'https://i.ibb.co/hFLSfwg6/Group-1.png'
+  value: '/brand-assets/grape-logo-light.png'
   display_title: 'Logo'
   description: 'The logo that would be used on the dashboard, login page etc.'
 - name: LOGO_DARK
-  value: 'https://i.ibb.co/Nn3Z5mMw/Group-3.png'
+  value: '/brand-assets/grape-logo-dark.png'
   display_title: 'Logo Dark Mode'
   description: 'The logo that would be used on the dashboard, login page etc. for dark mode'
 - name: BRAND_URL
-  value: 'https://www.reengenhariadigital.com.br'
+  value: 'https://grapeai.vercel.app/'
   display_title: 'Brand URL'
   description: 'The URL that would be used in emails under the section “Powered By”'
 - name: WIDGET_BRAND_URL
-  value: 'https://www.reengenhariadigital.com.br'
+  value: 'https://grapeai.vercel.app/'
   display_title: 'Widget Brand URL'
   description: 'The URL that would be used in the widget under the section “Powered By”'
 - name: BRAND_NAME
