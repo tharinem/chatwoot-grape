@@ -18,11 +18,11 @@ class InstallationConfig < ApplicationRecord
   GRAPE_BRANDING = {
     'INSTALLATION_NAME' => 'Grape Ai',
     'BRAND_NAME' => 'Grape Ai',
-    'LOGO' => 'https://i.ibb.co/hFLSfwg6/Group-1.png',
-    'LOGO_DARK' => 'https://i.ibb.co/Nn3Z5mMw/Group-3.png',
-    'LOGO_THUMBNAIL' => 'https://i.ibb.co/tMLg0FFJ/Group-2.png',
-    'BRAND_URL' => 'https://www.reengenhariadigital.com.br',
-    'WIDGET_BRAND_URL' => 'https://www.reengenhariadigital.com.br'
+    'LOGO' => '/brand-assets/grape-logo-light.png',
+    'LOGO_DARK' => '/brand-assets/grape-logo-dark.png',
+    'LOGO_THUMBNAIL' => '/brand-assets/grape-thumbnail.png',
+    'BRAND_URL' => 'https://www.grapeai.com.br/',
+    'WIDGET_BRAND_URL' => 'https://www.grapeai.com.br/'
   }.freeze
 
   # https://stackoverflow.com/questions/72970170/upgrading-to-rails-6-1-6-1-causes-psychdisallowedclass-tried-to-load-unspecif
