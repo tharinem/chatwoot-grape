@@ -12,8 +12,8 @@ Rails.application.config.after_initialize do
     'LOGO' => '/brand-assets/grape-logo-light.png',
     'LOGO_DARK' => '/brand-assets/grape-logo-dark.png',
     'LOGO_THUMBNAIL' => '/brand-assets/grape-thumbnail.png',
-    'BRAND_URL' => 'https://grapeai.vercel.app/',
-    'WIDGET_BRAND_URL' => 'https://grapeai.vercel.app/'
+    'BRAND_URL' => 'https://www.grapeai.com.br/',
+    'WIDGET_BRAND_URL' => 'https://www.grapeai.com.br/'
   }
 
   branding.each do |name, value|
