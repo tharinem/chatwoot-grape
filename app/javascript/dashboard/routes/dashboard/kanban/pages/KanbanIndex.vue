@@ -1,11 +1,13 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue';
-import { useStore } from 'dashboard/composables/store';
+import { computed, ref } from 'vue';
+import { useMapGetter } from 'dashboard/composables/store';
 
-const store = useStore();
-
-const currentUser = computed(() => store.getters['auth/getCurrentUser']);
-const accountId = computed(() => store.getters['auth/getCurrentAccountId']);
+// Use the Chatwoot store getters directly (no `auth/` namespace) so we
+// get the real account id + the user's API access token. The previous
+// `auth/getCurrentUser` namespace doesn't exist and was producing
+// `undefined` / empty values in the iframe URL.
+const currentUser = useMapGetter('getCurrentUser');
+const accountId = useMapGetter('getCurrentAccountId');
 
 const kanbanUrl = computed(() => {
   const baseUrl = 'https://kanban.grapeai.com.br';
