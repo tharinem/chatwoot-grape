@@ -8,7 +8,7 @@ const currentUser = computed(() => store.getters['auth/getCurrentUser']);
 const accountId = computed(() => store.getters['auth/getCurrentAccountId']);
 
 const kanbanUrl = computed(() => {
-  const baseUrl = 'https://kanban.reengenhariadigital.com.br';
+  const baseUrl = 'https://kanban.grapeai.com.br';
   const token = currentUser.value?.access_token || '';
   return `${baseUrl}?account_id=${accountId.value}&token=${token}`;
 });
