@@ -15,13 +15,15 @@ import { tryDecryptSecret } from '../../services/crypto.js';
 
 export default async function cardRoutes(fastify: FastifyInstance) {
   // GET /cards — all cards for the account (D-09)
+  // Filters orphan cards (conversation deleted upstream in Chatwoot) so they
+  // don't clutter the board. The DB row is kept around for audit/recovery.
   fastify.get('/cards', {
     onRequest: [fastify.authenticate],
     schema: {},
   }, async (request) => {
     const { account_id } = request.user as JwtPayload;
     const cards = await prisma.card.findMany({
-      where: { accountId: account_id, deletedAt: null },
+      where: { accountId: account_id, deletedAt: null, isOrphan: false },
       orderBy: { position: 'asc' },
       include: {
         notes: { orderBy: { createdAt: 'desc' } },
@@ -52,7 +54,7 @@ export default async function cardRoutes(fastify: FastifyInstance) {
     }
 
     const cards = await prisma.card.findMany({
-      where: { accountId: account_id, stageId, deletedAt: null },
+      where: { accountId: account_id, stageId, deletedAt: null, isOrphan: false },
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { position: 'asc' },

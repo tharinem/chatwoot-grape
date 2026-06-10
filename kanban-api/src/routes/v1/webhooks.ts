@@ -304,6 +304,29 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
           });
         }
 
+        case 'conversation_status_changed': {
+          // Chatwoot doesn't expose a dedicated `conversation_deleted` event in
+          // the dashboard webhook picker — a hard delete shows up here with
+          // status === 'deleted'. We mirror that into our orphan-marker flow
+          // so the card disappears from the board.
+          if (!conversationId) {
+            return send(reply, 200, { status: 'ignored', action: 'conversation_status_changed:no-id' });
+          }
+          const newStatus = payload.conversation?.status;
+          if (newStatus !== 'deleted') {
+            return send(reply, 200, {
+              status: 'ignored',
+              action: `conversation_status_changed:${newStatus ?? 'unknown'}-not-deleted`,
+            });
+          }
+          const cardId = await markOrphan(account_id, conversationId);
+          return send(reply, 202, {
+            status: 'accepted',
+            action: cardId ? 'conversation_status_changed:orphaned' : 'conversation_status_changed:not-found',
+            card_id: cardId ?? undefined,
+          });
+        }
+
         case 'message_created': {
           // Mirror Chatwoot private notes back to the corresponding card.
           // Skip if not private, no content, or the message originated from

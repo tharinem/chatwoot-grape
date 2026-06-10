@@ -12,6 +12,7 @@ export const webhookEventSchema = z.enum([
   'conversation_created',
   'conversation_updated',
   'conversation_deleted',
+  'conversation_status_changed',
   'contact_updated',
   'contact_deleted',
   'message_created',
