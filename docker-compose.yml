@@ -33,19 +33,13 @@ services:
     expose:
       - "3001"
 
-  frontend:
-    image: ${DOCKER_IMAGE_FRONTEND:-kanban-frontend:latest}
-    build:
-      context: ./kanban-frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=${VITE_API_URL}
-    container_name: kanban-frontend
-    restart: always
-    depends_on:
-      - api
-    ports:
-      - "80:80"
+  # The Kanban frontend now lives in its own repository to keep this
+  # Chatwoot fork lean. Deployed independently by Coolify.
+  #   Repo: https://github.com/tharinem/grape-kanban-frontend
+  #   Prod: https://kanban.grapeai.com.br
+  # To run locally:
+  #   git clone https://github.com/tharinem/grape-kanban-frontend
+  #   cd grape-kanban-frontend && npm install && npm run dev
 
 volumes:
   kanban_data:
