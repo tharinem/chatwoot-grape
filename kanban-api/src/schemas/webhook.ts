@@ -7,6 +7,10 @@ import { z } from 'zod';
  * - `conversation_created` / `conversation_updated`: card create/update
  * - `contact_updated`: refresh mirror fields (name, channel, custom attrs)
  * - `contact_deleted` / `conversation_deleted`: orphan the card (soft-mark)
+ * - `conversation_status_changed`: dashboard's hard-delete surfaces here with
+ *   status === 'deleted' (Chatwoot doesn't expose a real `conversation_deleted`
+ *   event in the webhook picker)
+ * - `message_created`: used to mirror private notes back to the matching card
  */
 export const webhookEventSchema = z.enum([
   'conversation_created',
@@ -21,64 +25,74 @@ export const webhookEventSchema = z.enum([
 /**
  * Permissive payload schema. Chatwoot's webhook bodies vary a lot across
  * versions and event types, so we pick out only what we need and pass
- * everything else through. Most fields are optional.
+ * everything else through.
+ *
+ * Important: Chatwoot frequently sends `null` for absent fields (instead of
+ * omitting them), so optional-but-nullable fields use `.nullish()` (== nullable
+ * + optional). Using plain `.optional()` was making the schema reject real
+ * payloads like `meta.sender.email: null` with a Zod 400, which is why no
+ * card was being created from any conversation.
  */
+const nullishString = z.string().nullish();
+const nullishPositiveInt = z.number().int().positive().nullish();
+const nullishRecord = z.record(z.unknown()).nullish();
+
 export const webhookPayloadSchema = z.object({
   event: webhookEventSchema,
 
   // Conversation fields
-  conversation_id: z.number().int().positive().optional(),
+  conversation_id: nullishPositiveInt,
   conversation: z.object({
     id: z.number().int().positive(),
-    status: z.string().optional(),
-    channel: z.string().optional(),
-    custom_attributes: z.record(z.unknown()).optional(),
-    additional_attributes: z.record(z.unknown()).optional(),
+    status: nullishString,
+    channel: nullishString,
+    custom_attributes: nullishRecord,
+    additional_attributes: nullishRecord,
     assignee: z.object({
-      id: z.number().int().positive().optional(),
-      name: z.string().optional(),
-      avatar_url: z.string().optional(),
-    }).optional(),
+      id: nullishPositiveInt,
+      name: nullishString,
+      avatar_url: nullishString,
+    }).nullish(),
     meta: z.object({
       assignee: z.object({
-        id: z.number().int().positive().optional(),
-        name: z.string().optional(),
-        avatar_url: z.string().optional(),
-      }).optional(),
+        id: nullishPositiveInt,
+        name: nullishString,
+        avatar_url: nullishString,
+      }).nullish(),
       sender: z.object({
-        id: z.number().int().positive().optional(),
-        name: z.string().optional(),
-        phone_number: z.string().optional(),
-        email: z.string().optional(),
-      }).optional(),
-    }).optional(),
-  }).optional(),
+        id: nullishPositiveInt,
+        name: nullishString,
+        phone_number: nullishString,
+        email: nullishString,
+      }).nullish(),
+    }).nullish(),
+  }).nullish(),
 
   // Contact fields
   contact: z.object({
     id: z.number().int().positive(),
-    name: z.string().optional(),
-    email: z.string().optional(),
-    phone_number: z.string().optional(),
-    thumbnail: z.string().optional(),
-    custom_attributes: z.record(z.unknown()).optional(),
-    additional_attributes: z.record(z.unknown()).optional(),
-  }).optional(),
+    name: nullishString,
+    email: nullishString,
+    phone_number: nullishString,
+    thumbnail: nullishString,
+    custom_attributes: nullishRecord,
+    additional_attributes: nullishRecord,
+  }).nullish(),
 
   // Legacy flat fields retained for backward compatibility with the old webhook format
-  contact_name: z.string().max(255).optional(),
-  channel_type: z.string().max(50).optional(),
-  assignee_id: z.number().int().positive().optional(),
-  phone: z.string().max(50).optional(),
-  email: z.string().optional(),
-  conversation_url: z.string().optional(),
+  contact_name: z.string().max(255).nullish(),
+  channel_type: z.string().max(50).nullish(),
+  assignee_id: nullishPositiveInt,
+  phone: z.string().max(50).nullish(),
+  email: nullishString,
+  conversation_url: nullishString,
 
   // Message-level fields (for message_created event mirroring private notes)
-  id: z.number().int().positive().optional(),
-  content: z.string().optional(),
-  message_type: z.union([z.string(), z.number()]).optional(),
-  private: z.boolean().optional(),
-  content_attributes: z.record(z.unknown()).optional(),
+  id: nullishPositiveInt,
+  content: nullishString,
+  message_type: z.union([z.string(), z.number()]).nullish(),
+  private: z.boolean().nullish(),
+  content_attributes: nullishRecord,
 }).passthrough();
 
 export const webhookResponseSchema = z.object({
