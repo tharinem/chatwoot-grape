@@ -103,4 +103,20 @@ class Whatsapp::Providers::BaseService
     json_hash = { :button => I18n.t('conversations.messages.whatsapp.list_button_label'), 'sections' => sections }
     create_payload('list', message.outgoing_content, JSON.generate(json_hash))
   end
+
+  # NOTE: Ported (Phase 19, feat/baileys-channel-port) from fazer-ai/chatwoot@main's 4.15
+  # BaseService. Not in the original Task 2 enxerto list (RESEARCH/PLAN only named 4 files) —
+  # discovered as a hard blocker while porting whatsapp_baileys_service.rb#send_message (media
+  # path): the ported provider calls this to base64-encode attachments for the baileys-api
+  # send-message payload, and it did not exist anywhere in this fork. Self-contained, additive,
+  # no behavior change for whatsapp_cloud/360dialog (neither calls it). Rule 3 (blocking fix).
+  def attachment_to_base64(attachment)
+    buffer = +''
+    attachment.file.blob.open do |file|
+      while (chunk = file.read(64.kilobytes))
+        buffer << chunk
+      end
+    end
+    Base64.strict_encode64(buffer)
+  end
 end

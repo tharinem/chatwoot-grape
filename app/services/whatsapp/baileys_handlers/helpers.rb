@@ -1,0 +1,289 @@
+module Whatsapp::BaileysHandlers::Helpers # rubocop:disable Metrics/ModuleLength
+  include Whatsapp::IncomingMessageServiceHelpers
+
+  private
+
+  def unwrap_ephemeral_message(msg)
+    msg.key?(:ephemeralMessage) ? msg.dig(:ephemeralMessage, :message) : msg
+  end
+
+  def raw_message_id
+    @raw_message[:key][:id]
+  end
+
+  def incoming?
+    !@raw_message[:key][:fromMe]
+  end
+
+  def jid_type # rubocop:disable Metrics/CyclomaticComplexity
+    jid = @raw_message[:key][:remoteJid]
+    server = jid.split('@').last
+
+    # NOTE: Based on Baileys internal functions
+    # https://github.com/WhiskeySockets/Baileys/blob/v6.7.16/src/WABinary/jid-utils.ts#L48-L58
+    case server
+    when 's.whatsapp.net', 'c.us'
+      'user'
+    when 'g.us'
+      'group'
+    when 'lid'
+      'lid'
+    when 'broadcast'
+      jid.start_with?('status@') ? 'status' : 'broadcast'
+    when 'newsletter'
+      'newsletter'
+    when 'call'
+      'call'
+    else
+      'unknown'
+    end
+  end
+
+  # Recorte (Phase 19): 'reaction' cut scope (see 19-RESEARCH.md + CONTEXT.md) — reactions are
+  # routed to ignore_message? below instead of the upstream mark_existing_reaction_as_removed
+  # path, so we never need the removed GroupContactMessageHandler/GroupEventHelper concerns.
+  def message_type # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity,Metrics/MethodLength,Metrics/AbcSize
+    msg = unwrap_ephemeral_message(@raw_message[:message])
+    # A Click-to-WhatsApp ad-click can arrive as an extendedTextMessage carrying
+    # only the ad context (no text). Classify it as text so it renders with the
+    # ad headline/body as fallback content instead of being dropped/unsupported.
+    if msg.key?(:conversation) || msg.dig(:extendedTextMessage, :text).present? ||
+       msg.dig(:extendedTextMessage, :contextInfo, :externalAdReply).present?
+      'text'
+    elsif msg.key?(:imageMessage)
+      'image'
+    elsif msg.key?(:audioMessage)
+      'audio'
+    elsif msg.key?(:videoMessage)
+      'video'
+    elsif msg.key?(:documentMessage) || msg.key?(:documentWithCaptionMessage)
+      'file'
+    elsif msg.key?(:stickerMessage)
+      'sticker'
+    elsif msg.key?(:reactionMessage)
+      'reaction'
+    elsif msg.key?(:editedMessage)
+      'edited'
+    elsif msg.key?(:contactMessage)
+      match_phone_number = msg.dig(:contactMessage, :vcard)&.match(/waid=(\d+)/)
+      match_phone_number ? 'contact' : 'unsupported'
+    elsif msg.key?(:contactsArrayMessage)
+      'contact'
+    elsif msg.key?(:locationMessage) || msg.key?(:liveLocationMessage)
+      'location'
+    elsif msg.key?(:protocolMessage)
+      'protocol'
+    elsif msg.key?(:messageContextInfo) && msg.keys.count == 1
+      'context'
+    elsif Whatsapp::Baileys::RichMessageParser.rich?(msg)
+      'rich'
+    else
+      'unsupported'
+    end
+  end
+
+  def message_content # rubocop:disable Metrics/CyclomaticComplexity
+    msg = unwrap_ephemeral_message(@raw_message[:message])
+    case message_type
+    when 'text'
+      text = msg[:conversation] || msg.dig(:extendedTextMessage, :text)
+      context_info = msg.dig(:extendedTextMessage, :contextInfo)
+      text = baileys_referral_fallback_content(context_info) if text.blank?
+      text
+    when 'image'
+      msg.dig(:imageMessage, :caption)
+    when 'video'
+      msg.dig(:videoMessage, :caption)
+    when 'file'
+      msg.dig(:documentMessage, :caption).presence ||
+        msg.dig(:documentWithCaptionMessage, :message, :documentMessage, :caption)
+    when 'rich'
+      Whatsapp::Baileys::RichMessageParser.to_text(Whatsapp::Baileys::RichMessageParser.new(msg).parse)
+    end
+  end
+
+  # The shared contacts of the current message: the entries of a
+  # contactsArrayMessage, or the single contactMessage wrapped in an array.
+  def baileys_contacts
+    msg = unwrap_ephemeral_message(@raw_message[:message])
+    msg.dig(:contactsArrayMessage, :contacts).presence || [msg[:contactMessage]].compact
+  end
+
+  # Extracts { phone, name } from a Baileys contact hash. The vcard TEL line is
+  # `...;waid=<digits>:<formatted phone>`, so prefer the formatted phone and fall
+  # back to the waid digits.
+  def baileys_contact_fields(contact)
+    vcard = contact&.dig(:vcard).to_s
+    phone = vcard[/waid=\d+:\s*([^\r\n]+)/, 1]&.strip
+    phone = vcard[/waid=(\d+)/, 1] if phone.blank?
+    { phone: phone, name: contact&.dig(:displayName) }
+  end
+
+  # Short "Name - phone" line used as the message content (chat-list preview).
+  def baileys_contact_line(contact)
+    fields = baileys_contact_fields(contact)
+    return fields[:name] if fields[:phone].blank?
+    return fields[:phone] if fields[:name].blank? || fields[:name].start_with?('+')
+
+    "#{fields[:name]} - #{fields[:phone]}"
+  end
+
+  # The provider id of the quoted message (stanzaId), read from the same per-type
+  # contextInfo used for ad attribution, so every supported type (incl. rich,
+  # location and contact) resolves replies through a single lookup.
+  def reply_to_message_id
+    message_context_info&.dig(:stanzaId)
+  end
+
+  # Returns the `contextInfo` for the current message type, where the
+  # Click-to-WhatsApp ad metadata (`externalAdReply`) lives.
+  def message_context_info # rubocop:disable Metrics/CyclomaticComplexity
+    msg = unwrap_ephemeral_message(@raw_message[:message])
+    case message_type
+    when 'text' then msg.dig(:extendedTextMessage, :contextInfo)
+    when 'image' then msg.dig(:imageMessage, :contextInfo)
+    when 'video' then msg.dig(:videoMessage, :contextInfo)
+    when 'audio' then msg.dig(:audioMessage, :contextInfo)
+    when 'sticker' then msg.dig(:stickerMessage, :contextInfo)
+    when 'file'
+      msg.dig(:documentMessage, :contextInfo).presence ||
+        msg.dig(:documentWithCaptionMessage, :message, :documentMessage, :contextInfo)
+    when 'contact'
+      msg.dig(:contactMessage, :contextInfo) || msg.dig(:contactsArrayMessage, :contextInfo)
+    when 'location'
+      msg.dig(:locationMessage, :contextInfo) || msg.dig(:liveLocationMessage, :contextInfo)
+    when 'rich' then Whatsapp::Baileys::RichMessageParser.new(msg).context_info
+    end
+  end
+
+  def baileys_referral_fallback_content(context_info)
+    ad = context_info&.dig(:externalAdReply)
+    return if ad.blank?
+
+    ad[:title].presence || ad[:body].presence
+  end
+
+  # Media nested in a rich header (e.g. a PDF/image in a template header), or nil.
+  def rich_media_header
+    return unless message_type == 'rich'
+
+    Whatsapp::Baileys::RichMessageParser.new(unwrap_ephemeral_message(@raw_message[:message])).media_header
+  end
+
+  def file_content_type
+    return :image if message_type.in?(%w[image sticker])
+    return :video if message_type.in?(%w[video video_note])
+    return :audio if message_type == 'audio'
+    return rich_media_header[:kind].to_sym if rich_media_header
+
+    :file
+  end
+
+  def message_mimetype # rubocop:disable Metrics/CyclomaticComplexity
+    msg = unwrap_ephemeral_message(@raw_message[:message])
+    case message_type
+    when 'image'
+      msg.dig(:imageMessage, :mimetype)
+    when 'sticker'
+      msg.dig(:stickerMessage, :mimetype)
+    when 'video'
+      msg.dig(:videoMessage, :mimetype)
+    when 'audio'
+      msg.dig(:audioMessage, :mimetype)
+    when 'file'
+      msg.dig(:documentMessage, :mimetype).presence ||
+        msg.dig(:documentWithCaptionMessage, :message, :documentMessage, :mimetype)
+    when 'rich'
+      rich_media_header&.dig(:node, :mimetype)
+    end
+  end
+
+  def extract_from_jid(type:)
+    addressing_mode = @raw_message[:key][:addressingMode]
+    reference_field = addressing_mode && addressing_mode != type ? :remoteJidAlt : :remoteJid
+
+    jid = @raw_message[:key][reference_field]
+    return unless jid
+
+    # NOTE: jid shape is `<user>_<agent>:<device>@<server>`
+    # https://github.com/WhiskeySockets/Baileys/blob/v7.0.0-rc.6/src/WABinary/jid-utils.ts#L52
+    jid.split('@').first.split(':').first.split('_').first
+  end
+
+  def contact_name
+    # NOTE: `verifiedBizName` is only available for business accounts and has a higher priority than `pushName`.
+    name = @raw_message[:verifiedBizName].presence || @raw_message[:pushName]
+    return name if name.presence && (self_message? || incoming?)
+
+    extract_from_jid(type: 'pn') || extract_from_jid(type: 'lid')
+  end
+
+  def self_message?
+    normalize_phone_number(extract_from_jid(type: 'pn')) == normalize_phone_number(inbox.channel.phone_number.delete('+'))
+  end
+
+  def normalize_phone_number(phone_number)
+    return unless phone_number
+
+    Whatsapp::PhoneNormalizers::BrazilPhoneNormalizer.new.normalize(phone_number)
+  end
+
+  # A name equal to the contact's WhatsApp phone (in any normalized "9"-variant),
+  # its LID, or the "<lid>@lid" identifier is an auto-generated placeholder rather
+  # than a human-entered name. Matching normalized phone variants lets the real
+  # pushName replace a number stranded by phone normalization, e.g. when the
+  # Brazilian "9" digit is added/removed and phone_number no longer matches the
+  # digits saved as the name.
+  def placeholder_contact_name?(name, phone:, identifier:)
+    return true if name.blank?
+    return true if name == identifier
+
+    digits = name.delete('+')
+    return false unless digits.match?(/\A\d+\z/)
+
+    lid = identifier&.delete_suffix('@lid')
+    return true if digits.in?([phone, lid].compact)
+
+    phone.present? && same_whatsapp_number?(digits, phone)
+  end
+
+  def same_whatsapp_number?(left, right)
+    normalizer = phone_normalizer_for(left) || phone_normalizer_for(right)
+    return false unless normalizer
+
+    normalizer.normalize(left) == normalizer.normalize(right)
+  end
+
+  def phone_normalizer_for(value)
+    Whatsapp::PhoneNumberNormalizationService::NORMALIZERS
+      .map(&:new)
+      .find { |normalizer| normalizer.handles_country?(value) }
+  end
+
+  # Recorte (Phase 19): 'reaction' added to the ignore-list — reactions are cut scope, so an
+  # incoming reactionMessage is silently ignored instead of creating/removing a Message row
+  # (upstream's mark_existing_reaction_as_removed / reaction_removal? path, not ported).
+  def ignore_message?
+    message_type.in?(%w[protocol context edited reaction])
+  end
+
+  def try_update_contact_avatar(contact = nil)
+    # Recorte (Phase 19): Channels::Whatsapp::BaileysUpdateContactAvatarJob NOT ported (cut —
+    # see 19-01-SUMMARY.md). No-op instead of raising NameError; avatars simply stay unset.
+  end
+
+  def message_under_process?
+    key = format(Redis::RedisKeys::MESSAGE_SOURCE_KEY, id: "#{inbox.id}_#{raw_message_id}")
+    Redis::Alfred.get(key)
+  end
+
+  def acquire_message_processing_lock
+    key = format(Redis::RedisKeys::MESSAGE_SOURCE_KEY, id: "#{inbox.id}_#{raw_message_id}")
+    Redis::Alfred.set(key, true, nx: true, ex: 1.day)
+  end
+
+  def clear_message_source_id_from_redis
+    key = format(Redis::RedisKeys::MESSAGE_SOURCE_KEY, id: "#{inbox.id}_#{raw_message_id}")
+    ::Redis::Alfred.delete(key)
+  end
+end
