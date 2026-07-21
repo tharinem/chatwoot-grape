@@ -12,6 +12,7 @@ module Events::Types
 
   # channel events
   WEBWIDGET_TRIGGERED = 'webwidget.triggered'
+  PROVIDER_EVENT_RECEIVED = 'provider.event_received'
 
   # conversation events
   CONVERSATION_CREATED = 'conversation.created'
@@ -29,6 +30,7 @@ module Events::Types
   ASSIGNEE_CHANGED = 'assignee.changed'
   TEAM_CHANGED = 'team.changed'
   CONVERSATION_TYPING_ON = 'conversation.typing_on'
+  CONVERSATION_RECORDING = 'conversation.recording'
   CONVERSATION_TYPING_OFF = 'conversation.typing_off'
   CONVERSATION_MENTIONED = 'conversation.mentioned'
 
@@ -47,6 +49,7 @@ module Events::Types
   # contact events
   INBOX_CREATED = 'inbox.created'
   INBOX_UPDATED = 'inbox.updated'
+  INBOX_PROVIDER_CONNECTION_UPDATED = 'inbox.provider_connection_updated'
 
   # notification events
   NOTIFICATION_CREATED = 'notification.created'

@@ -74,4 +74,32 @@ module Whatsapp::IncomingMessageServiceHelpers
 
     Whatsapp::MessageDedupLock.new(messages_data.first[:id]).acquire!
   end
+
+  # NOTE: Ported (Phase 19) from fazer-ai/chatwoot 4.15. Used by the Baileys handlers
+  # (Whatsapp::BaileysHandlers::Concerns::IndividualContactMessageHandler) to serialize
+  # processing per contact phone, preventing race conditions when multiple messages from
+  # the same contact arrive simultaneously (e.g. WhatsApp albums).
+  def with_contact_lock(phone, timeout: 5.seconds)
+    raise ArgumentError, 'A block is required for with_contact_lock' unless block_given?
+    return yield if phone.blank?
+
+    key = "WHATSAPP::CONTACT_LOCK::#{inbox.id}_#{phone}"
+    start_time = Time.now.to_i
+    lock_acquired = false
+
+    while (Time.now.to_i - start_time) < timeout
+      if Redis::Alfred.set(key, 1, nx: true, ex: timeout)
+        lock_acquired = true
+        break
+      end
+
+      sleep(0.1)
+    end
+
+    raise Timeout::Error, "Timeout acquiring contact lock for #{phone}" unless lock_acquired
+
+    yield
+  ensure
+    Redis::Alfred.delete(key) if lock_acquired
+  end
 end
