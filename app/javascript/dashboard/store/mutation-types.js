@@ -78,6 +78,8 @@ export default {
   ADD_INBOXES: 'ADD_INBOXES',
   EDIT_INBOXES: 'EDIT_INBOXES',
   DELETE_INBOXES: 'DELETE_INBOXES',
+  // NOTE: Ported (Phase 19, recorte) — Baileys QR/connection status pushed via ActionCable.
+  UPDATE_INBOX_PROVIDER_CONNECTION: 'UPDATE_INBOX_PROVIDER_CONNECTION',
 
   // Agent
   SET_ACCOUNT_UI_FLAG: 'SET_ACCOUNT_UI_FLAG',

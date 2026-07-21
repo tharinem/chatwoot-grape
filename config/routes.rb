@@ -215,6 +215,10 @@ Rails.application.routes.draw do
             get :campaigns, on: :member
             get :agent_bot, on: :member
             post :set_agent_bot, on: :member
+            # NOTE: Ported (Phase 19, recorte) — Baileys QR pairing/disconnect. import_whatsapp_session and
+            # convert_provider intentionally NOT ported (session-import + provider-convert cut from scope).
+            post :setup_channel_provider, on: :member
+            post :disconnect_channel_provider, on: :member
             delete :avatar, on: :member
             post :sync_templates, on: :member
             get :health, on: :member

@@ -71,6 +71,33 @@ class Api::V1::Accounts::InboxesController < Api::V1::Accounts::BaseController
     render status: :ok, json: { message: I18n.t('messages.inbox_deletetion_response') }
   end
 
+  # NOTE: Ported (Phase 19, recorte). Baileys QR pairing entrypoint — calls
+  # Channel::Whatsapp#setup_channel_provider (delegates to the provider service).
+  def setup_channel_provider
+    channel = @inbox.channel
+
+    unless channel.respond_to?(:setup_channel_provider)
+      render json: { error: 'Channel does not support setup' }, status: :unprocessable_entity and return
+    end
+
+    channel.setup_channel_provider
+    head :ok
+  end
+
+  # NOTE: Ported (Phase 19, recorte).
+  def disconnect_channel_provider
+    channel = @inbox.channel
+
+    unless channel.respond_to?(:disconnect_channel_provider)
+      render json: { error: 'Channel does not support disconnect' }, status: :unprocessable_entity and return
+    end
+
+    channel.disconnect_channel_provider
+    head :ok
+  ensure
+    channel.update_provider_connection!(connection: 'close') if channel.respond_to?(:update_provider_connection!)
+  end
+
   private
 
   def fetch_inbox

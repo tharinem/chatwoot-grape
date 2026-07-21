@@ -367,6 +367,20 @@ export const actions = {
     );
     return response.data;
   },
+  // NOTE: Ported (Phase 19, recorte) — Baileys QR pairing/disconnect + the
+  // real-time provider_connection update pushed over ActionCable.
+  setupChannelProvider: async (_, inboxId) => {
+    await InboxesAPI.setupChannelProvider(inboxId);
+  },
+  disconnectChannelProvider: async (_, inboxId) => {
+    await InboxesAPI.disconnectChannelProvider(inboxId);
+  },
+  updateProviderConnection: ({ commit }, { id, providerConnection }) => {
+    commit(types.default.UPDATE_INBOX_PROVIDER_CONNECTION, {
+      id,
+      provider_connection: providerConnection,
+    });
+  },
 };
 
 export const mutations = {
@@ -378,6 +392,10 @@ export const mutations = {
   [types.default.ADD_INBOXES]: MutationHelpers.create,
   [types.default.EDIT_INBOXES]: MutationHelpers.update,
   [types.default.DELETE_INBOXES]: MutationHelpers.destroy,
+  // NOTE: Ported (Phase 19, recorte). Shallow-merges provider_connection into the
+  // existing inbox record instead of replacing it (unlike EDIT_INBOXES/update).
+  [types.default.UPDATE_INBOX_PROVIDER_CONNECTION]:
+    MutationHelpers.updateAttributes,
 };
 
 export default {

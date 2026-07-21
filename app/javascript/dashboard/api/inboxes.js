@@ -48,6 +48,15 @@ class Inboxes extends CacheEnabledApiClient {
       template,
     });
   }
+
+  // NOTE: Ported (Phase 19, recorte) — Baileys QR pairing/disconnect.
+  setupChannelProvider(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/setup_channel_provider`);
+  }
+
+  disconnectChannelProvider(inboxId) {
+    return axios.post(`${this.url}/${inboxId}/disconnect_channel_provider`);
+  }
 }
 
 export default new Inboxes();

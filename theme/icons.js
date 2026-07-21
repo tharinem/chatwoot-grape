@@ -210,6 +210,16 @@ export const icons = {
     width: 24,
     height: 24,
   },
+  // NOTE: Ported (Phase 19, recorte) — verbatim from fazer-ai/chatwoot theme/icons.js.
+  baileys: {
+    body: `
+    <circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="3"/>
+    <path d="M28 26 L72 16 L42 54 L42 34 Z" fill="currentColor"/>
+    <path d="M72 74 L28 84 L58 46 L58 66 Z" fill="currentColor"/>
+    `,
+    width: 100,
+    height: 100,
+  },
   gmail: {
     body: `<path d="M20 6.25V16.75C20 17.3175 19.5675 17.75 19 17.75H18V8.1745L12 11.8095L6 8.1745V17.75H5C4.4325 17.75 4 17.3175 4 16.75V6.25C4 5.966 4.107 5.716 4.2865 5.539C4.466 5.3565 4.716 5.25 5 5.25H5.3335L12 9.3835L18.6665 5.25H19C19.284 5.25 19.534 5.357 19.7135 5.539C19.893 5.716 20 5.966 20 6.25Z" fill="currentColor"/>`,
     width: 24,
