@@ -29,7 +29,7 @@ module Whatsapp::BaileysHandlers::ConnectionUpdate
   #   - `open`: Open and ready to send/receive messages
   def provider_connection_payload(data)
     {
-      connection: data[:connection] || inbox.channel.provider_connection['connection'],
+      connection: connection_value(data),
       qr_data_url: data[:qrDataUrl] || nil,
       error: data[:error] ? I18n.t("errors.inboxes.channel.provider_connection.#{data[:error]}", default: data[:error].to_s.humanize) : nil,
       reachout_time_lock: reachout_time_lock_payload(data),
@@ -40,6 +40,20 @@ module Whatsapp::BaileysHandlers::ConnectionUpdate
       new_chat_cap: inbox.channel.provider_connection['new_chat_cap'],
       epoch: data[:epoch]
     }.compact
+  end
+
+  # Found in debug session `baileys-reconnect-stuck` (2026-07-22): a terminal provider error
+  # (wrong_phone_number, reconnect_loop_detected, ...) rides a connection.update webhook that
+  # carries `data[:error]` but NO `data[:connection]` at all (the provider gave up and logged
+  # the session out for real). Falling back to the last known `connection` value in that case
+  # silently masked the failure as "still reconnecting" forever — nobody ever saw it because the
+  # UI/health checks read `connection`, not `error`. Treat an error-without-connection payload as
+  # an explicit terminal state instead. A payload with neither `connection` nor `error` (e.g. a
+  # standalone reachoutTimeLock push) still preserves the existing value, unchanged.
+  def connection_value(data)
+    return 'close' if data[:connection].blank? && data[:error].present?
+
+    data[:connection] || inbox.channel.provider_connection['connection']
   end
 
   # Reach-out time-lock is NOT echoed on every connection.update (the provider debounces it
