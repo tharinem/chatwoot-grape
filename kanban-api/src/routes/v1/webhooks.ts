@@ -232,7 +232,15 @@ export default async function webhookRoutes(fastify: FastifyInstance) {
     const event = payload.event;
 
     // Resolve conversation id up front — many events share the same key.
-    const conversationId = payload.conversation?.id ?? payload.conversation_id;
+    // Chatwoot sends conversation-level events (conversation_created/updated/
+    // status_changed) with the conversation attributes at the TOP LEVEL of the
+    // payload (`conversation.webhook_data.merge(event:)`), so `payload.id` IS
+    // the conversation id there. Message-level events nest `conversation` and
+    // use top-level `id` for the message — never fall back for those.
+    const conversationId =
+      payload.conversation?.id ??
+      payload.conversation_id ??
+      (event.startsWith('conversation_') ? payload.id ?? undefined : undefined);
 
     try {
       switch (event) {
