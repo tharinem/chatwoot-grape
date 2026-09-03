@@ -86,7 +86,7 @@ class Whatsapp::FacebookApiClient
       body: {
         override_callback_uri: callback_url,
         verify_token: verify_token,
-        subscribed_fields: %w[messages smb_message_echoes]
+        subscribed_fields: %w[messages smb_message_echoes smb_app_state_sync history]
       }.to_json
     )
 

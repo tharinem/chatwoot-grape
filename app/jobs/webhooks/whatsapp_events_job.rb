@@ -9,11 +9,26 @@ class Webhooks::WhatsappEventsJob < ApplicationJob
       return
     end
 
-    if message_echo_event?(params)
+    if coexistence_sync_event?(params)
+      handle_coexistence_sync(channel, params)
+    elsif message_echo_event?(params)
       handle_message_echo(channel, params)
     else
       handle_message_events(channel, params)
     end
+  end
+
+  # Coexistência: agenda (`smb_app_state_sync`) e histórico (`history`) do WhatsApp
+  # Business App chegam minutos depois do Embedded Signup. Não viram mensagens —
+  # viram contatos marcados `cliente_antigo` (vide Whatsapp::CoexistenceSyncService).
+  COEXISTENCE_SYNC_FIELDS = %w[smb_app_state_sync history].freeze
+
+  def coexistence_sync_event?(params)
+    COEXISTENCE_SYNC_FIELDS.include?(params.dig(:entry, 0, :changes, 0, :field).to_s)
+  end
+
+  def handle_coexistence_sync(channel, params)
+    Whatsapp::CoexistenceSyncService.new(inbox: channel.inbox, params: params).perform
   end
 
   # Detects if the webhook is an SMB message echo event (message sent from WhatsApp Business app)
