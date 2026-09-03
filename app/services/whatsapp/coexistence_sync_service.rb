@@ -21,6 +21,7 @@ class Whatsapp::CoexistenceSyncService
                when 'history' then contatos_do_historico
                else []
                end
+    guardar_bruto if field == 'history'
     marcados = contatos.uniq { |c| c[:phone] }.count { |c| marcar_contato(c) }
     Rails.logger.info("[CoexistenceSync] inbox=#{inbox.id} field=#{field} contatos=#{contatos.size} marcados=#{marcados}")
     marcados
@@ -78,6 +79,20 @@ class Whatsapp::CoexistenceSyncService
   rescue StandardError => e
     Rails.logger.error("[CoexistenceSync] falha ao marcar #{phone}: #{e.class} #{e.message}")
     false
+  end
+
+  # O histórico só pode ser pedido nas 24h após a conexão. Guardamos cada chunk
+  # BRUTO em disco (volume persistente do Active Storage) pra uma importação de
+  # mensagens futura (etapa 2) não depender da janela da Meta.
+  def guardar_bruto
+    dir = Rails.root.join('storage', 'coexistence_history', inbox.id.to_s)
+    FileUtils.mkdir_p(dir)
+    meta = Array(value[:history]).first&.dig(:metadata) || {}
+    nome = format('%<t>d-chunk%<c>03d.json', t: Time.now.to_i, c: meta[:chunk_order].to_i)
+    File.write(dir.join(nome), JSON.pretty_generate(value.to_h))
+    Rails.logger.info("[CoexistenceSync] history bruto salvo em #{dir.join(nome)}")
+  rescue StandardError => e
+    Rails.logger.error("[CoexistenceSync] falha ao guardar history bruto: #{e.class} #{e.message}")
   end
 
   def digits(valor)
