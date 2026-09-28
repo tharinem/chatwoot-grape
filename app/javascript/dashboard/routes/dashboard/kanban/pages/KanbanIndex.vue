@@ -2,17 +2,17 @@
 import { computed, ref } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 
-// Use the Chatwoot store getters directly (no `auth/` namespace) so we
-// get the real account id + the user's API access token. The previous
-// `auth/getCurrentUser` namespace doesn't exist and was producing
-// `undefined` / empty values in the iframe URL.
-const currentUser = useMapGetter('getCurrentUser');
+// O CRM (kanban) agora vive no Grape Studio. Só o account_id vai na URL:
+// nenhum token do Chatwoot sai daqui. O SSO será uma troca de código de uso
+// único implementada no Grape Studio.
+const GRAPE_STUDIO_CRM_URL = 'https://studio.grapeai.com.br/crm';
+
 const accountId = useMapGetter('getCurrentAccountId');
 
 const kanbanUrl = computed(() => {
-  const baseUrl = 'https://kanban.grapeai.com.br';
-  const token = currentUser.value?.access_token || '';
-  return `${baseUrl}?account_id=${accountId.value}&token=${token}`;
+  const url = new URL(GRAPE_STUDIO_CRM_URL);
+  url.searchParams.set('account_id', accountId.value);
+  return url.toString();
 });
 
 const iframeLoaded = ref(false);
