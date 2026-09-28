@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Per-tenant config. One row per Chatwoot account id.
+/// Created on first successful login via /auth/chatwoot-token.
+model Account {
+  id                    Int       @id
+  /// Base URL of the Chatwoot instance this account belongs to.
+  /// Multi-tenant: some customers run self-hosted Chatwoot at their own domain.
+  chatwootBaseUrl       String    @map("chatwoot_base_url")
+  /// Admin-configured Chatwoot API access token for server-to-server calls,
+  /// used to enrich webhook payloads with custom_attributes.
+  /// Encrypted at rest with AES-256-GCM (see src/services/crypto.ts).
+  /// Null means "not configured yet" — webhook falls back to payload-only data.
+  chatwootApiToken      String?   @map("chatwoot_api_token")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("accounts")
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  accountId   Int      @map("account_id")
+  name        String
+  position    Int
+  color       String?
+  probability Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  cards Card[]
+
+  @@unique([accountId, position])
+  @@index([accountId])
+  @@map("stages")
+}
+
+model Card {
+  id             String    @id @default(cuid())
+  accountId      Int       @map("account_id")
+  stageId        String    @map("stage_id")
+  contactName    String    @map("contact_name")
+  conversationId Int?      @map("conversation_id")
+  /// Chatwoot contact id (needed to fetch custom_attributes independently of conversation).
+  contactId      Int?      @map("contact_id")
+  channelType    String?   @map("channel_type")
+  assigneeId     Int?      @map("assignee_id")
+  position       Int       @default(0)
+  dealValue      Float?    @map("deal_value")
+  priority       String?
+  nextFollowUp   DateTime? @map("next_follow_up")
+  agentName      String?   @map("agent_name")
+  agentAvatar    String?   @map("agent_avatar")
+  customFields   String?   @map("custom_fields")
+  /// True when upstream contact/conversation in Chatwoot was deleted but the
+  /// card still exists locally (sales history preservation).
+  isOrphan       Boolean   @default(false) @map("is_orphan")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  stage      Stage      @relation(fields: [stageId], references: [id])
+  notes      Note[]
+  activities Activity[]
+
+  @@index([accountId, stageId])
+  @@index([accountId, conversationId])
+  @@unique([accountId, conversationId])
+  @@index([accountId, contactId])
+  @@index([accountId, deletedAt])
+  @@map("cards")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  cardId    String   @map("card_id")
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cardId])
+  @@map("card_notes")
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  cardId    String   @map("card_id")
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  action    String
+  fromStage String?  @map("from_stage")
+  toStage   String?  @map("to_stage")
+  agent     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([cardId])
+  @@map("card_activities")
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  accountId Int       @map("account_id")
+  keyHash   String    @map("key_hash")
+  salt      String
+  prefix    String
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  @@index([accountId])
+  @@index([prefix])
+  @@map("api_keys")
+}
