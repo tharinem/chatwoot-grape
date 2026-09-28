@@ -1,15 +1,19 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useEventListener } from '@vueuse/core';
 import { useMapGetter } from 'dashboard/composables/store';
 
-// O CRM (kanban) agora vive no Grape Studio. Só o account_id vai na URL:
-// nenhum token do Chatwoot sai daqui. O SSO será uma troca de código de uso
-// único implementada no Grape Studio.
+// O CRM (kanban) vive no Grape Studio. Só o account_id vai na URL. O acesso vai
+// por postMessage: o CRM avisa "grape-crm:ready" e respondemos com o token do
+// usuário, só para a origem exata do Grape Studio (nunca '*'). Sem token na URL
+// e sem cookie de terceiro (o Safari bloqueia dentro de iframe).
 const GRAPE_STUDIO_CRM_URL = 'https://studio.grapeai.com.br/crm';
+const CRM_ORIGIN = new URL(GRAPE_STUDIO_CRM_URL).origin;
 
 const { t } = useI18n();
 const accountId = useMapGetter('getCurrentAccountId');
+const currentUser = useMapGetter('getCurrentUser');
 
 const kanbanUrl = computed(() => {
   const url = new URL(GRAPE_STUDIO_CRM_URL);
@@ -17,11 +21,28 @@ const kanbanUrl = computed(() => {
   return url.toString();
 });
 
+const iframe = ref(null);
 const iframeLoaded = ref(false);
 
 function onIframeLoad() {
   iframeLoaded.value = true;
 }
+
+useEventListener(window, 'message', event => {
+  const crmWindow = iframe.value?.contentWindow;
+  if (event.origin !== CRM_ORIGIN || event.source !== crmWindow) return;
+  if (event.data?.type !== 'grape-crm:ready') return;
+  const accessToken = currentUser.value?.access_token;
+  if (!accessToken) return;
+  crmWindow.postMessage(
+    {
+      type: 'grape-crm:auth',
+      accessToken,
+      accountId: Number(accountId.value),
+    },
+    CRM_ORIGIN
+  );
+});
 </script>
 
 <template>
@@ -33,6 +54,7 @@ function onIframeLoad() {
       <span class="text-n-slate-11">{{ t('SIDEBAR.KANBAN_LOADING') }}</span>
     </div>
     <iframe
+      ref="iframe"
       :src="kanbanUrl"
       class="w-full h-full border-0"
       :class="{ hidden: !iframeLoaded }"
