@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store';
 
 // O CRM (kanban) agora vive no Grape Studio. Só o account_id vai na URL:
@@ -7,6 +8,7 @@ import { useMapGetter } from 'dashboard/composables/store';
 // único implementada no Grape Studio.
 const GRAPE_STUDIO_CRM_URL = 'https://studio.grapeai.com.br/crm';
 
+const { t } = useI18n();
 const accountId = useMapGetter('getCurrentAccountId');
 
 const kanbanUrl = computed(() => {
@@ -28,7 +30,7 @@ function onIframeLoad() {
       v-if="!iframeLoaded"
       class="flex items-center justify-center w-full h-full"
     >
-      <span class="text-n-slate-11">Carregando Kanban...</span>
+      <span class="text-n-slate-11">{{ t('SIDEBAR.KANBAN_LOADING') }}</span>
     </div>
     <iframe
       :src="kanbanUrl"

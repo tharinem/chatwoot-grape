@@ -324,6 +324,7 @@
     "CONTACTS": "Contacts",
     "ACTIVE": "Active",
     "KANBAN": "Kanban",
+    "KANBAN_LOADING": "Loading CRM...",
     "COMPANIES": "Companies",
     "ALL_COMPANIES": "All Companies",
     "CAPTAIN": "Captain",
