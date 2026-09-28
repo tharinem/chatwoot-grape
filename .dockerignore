@@ -15,3 +15,5 @@ vendor/bundle
 .DS_Store
 *.swp
 *~
+enterprise
+spec/enterprise
