@@ -138,3 +138,10 @@ bundle exec rails runner "{ 'INSTALLATION_NAME' => 'Grape Ai', 'BRAND_NAME' => '
    ```
    Tudo zero: segue. Algum número acima de zero: decidir com a Tharine antes (exportar os
    dados ou manter a função por outro caminho).
+3. **Voltar o plano para `community`.** O compose antigo mandava
+   `INSTALLATION_PRICING_PLAN=enterprise`, e esse valor pode ter ficado gravado no banco.
+   Sem o enterprise ele não liga nada, mas deixa telas do Super Admin mostrando plano pago.
+   Conferir e zerar:
+   ```bash
+   bundle exec rails runner "c = InstallationConfig.find_by(name: 'INSTALLATION_PRICING_PLAN'); puts c&.value.inspect; c&.update!(value: 'community')"
+   ```
