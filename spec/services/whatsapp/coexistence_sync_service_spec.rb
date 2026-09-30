@@ -4,18 +4,20 @@ require 'rails_helper'
 # marcados `cliente_antigo` (a IA da Grape não atende quem já era da atendente).
 RSpec.describe Whatsapp::CoexistenceSyncService do
   let(:account) { create(:account) }
-  let(:channel) { create(:channel_whatsapp, account: account, phone_number: '+5541936185329', sync_templates: false, validate_provider_config: false) }
+  let(:channel) do
+    create(:channel_whatsapp, account: account, phone_number: '+5541936185329', sync_templates: false, validate_provider_config: false)
+  end
   let(:inbox) { channel.inbox }
 
   def payload(field, value)
-    { object: 'whatsapp_business_account',
-      entry: [{ id: '1', changes: [{ field: field, value: { messaging_product: 'whatsapp',
-                                                            metadata: { display_phone_number: '5541936185329', phone_number_id: '1' } }.merge(value) }] }] }
+    base = { messaging_product: 'whatsapp', metadata: { display_phone_number: '5541936185329', phone_number_id: '1' } }
+    { object: 'whatsapp_business_account', entry: [{ id: '1', changes: [{ field: field, value: base.merge(value) }] }] }
   end
 
   it 'marca os contatos da agenda como cliente_antigo (e ignora remocoes)' do
     p = payload('smb_app_state_sync', state_sync: [
-                  { type: 'contact', action: 'add', contact: { full_name: 'Pablo Morales', first_name: 'Pablo', phone_number: '+55 (41) 99108-7328' } },
+                  { type: 'contact', action: 'add',
+                    contact: { full_name: 'Pablo Morales', first_name: 'Pablo', phone_number: '+55 (41) 99108-7328' } },
                   { type: 'contact', action: 'remove', contact: { full_name: 'X', phone_number: '5541000000000' } }
                 ])
     expect(described_class.new(inbox: inbox, params: p).perform).to eq(1)
