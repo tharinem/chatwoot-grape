@@ -11,9 +11,14 @@ concurrency:
   group: pr-${{ github.workflow }}-${{ github.head_ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   deployment_check:
     name: Check Deployment
+    # Heroku review apps only exist on chatwoot/chatwoot; forks skip this job.
+    if: github.repository == 'chatwoot/chatwoot'
     runs-on: ubuntu-latest
     steps:
       - name: Install jq
