@@ -41,7 +41,7 @@ branding é só default; instalação existente aplica uma vez com o comando de 
 |---|---|---|
 | `app/javascript/dashboard/components-next/sidebar/Sidebar.vue` | Item "Kanban" no menu | núcleo |
 | `app/javascript/dashboard/routes/dashboard/dashboard.routes.js` | Registra as rotas do kanban | núcleo |
-| `app/javascript/dashboard/routes/dashboard/kanban/*` | Página com iframe para `https://studio.grapeai.com.br/crm?account_id=<id>` | isolado |
+| `app/javascript/dashboard/routes/dashboard/kanban/*` | Página com iframe para `https://grape-studio.vercel.app/crm?account_id=<id>` | isolado |
 | `app/javascript/dashboard/i18n/locale/{en,pt_BR}/settings.json` | Chave `SIDEBAR.KANBAN` | núcleo |
 
 O backend do kanban saiu deste repositório (vive no Grape Studio). Nenhum token vai na URL;

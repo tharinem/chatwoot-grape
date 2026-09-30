@@ -112,7 +112,7 @@ Marque cada item com evidência (print ou log). Vale para staging e para produç
       conversa, e o sync de agenda/histórico marca contatos como `cliente_antigo`.
 - [ ] Handoff: IA pausa e transfere para humano na inbox de teste, **no canal real**
       (não vale `/chat` do Studio).
-- [ ] CRM abre na sidebar (item Kanban carrega `studio.grapeai.com.br/crm`).
+- [ ] CRM abre na sidebar (item Kanban carrega `grape-studio.vercel.app/crm`).
 - [ ] Widget do site com a cor da Grape.
 
 ## Branding em instalações existentes

@@ -8,7 +8,8 @@ import { useMapGetter } from 'dashboard/composables/store';
 // por postMessage: o CRM avisa "grape-crm:ready" e respondemos com o token do
 // usuário, só para a origem exata do Grape Studio (nunca '*'). Sem token na URL
 // e sem cookie de terceiro (o Safari bloqueia dentro de iframe).
-const GRAPE_STUDIO_CRM_URL = 'https://studio.grapeai.com.br/crm';
+// Frontend do Grape Studio (Vercel). studio.grapeai.com.br é o backend FastAPI.
+const GRAPE_STUDIO_CRM_URL = 'https://grape-studio.vercel.app/crm';
 const CRM_ORIGIN = new URL(GRAPE_STUDIO_CRM_URL).origin;
 
 const { t } = useI18n();
