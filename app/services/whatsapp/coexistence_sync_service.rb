@@ -87,12 +87,16 @@ class Whatsapp::CoexistenceSyncService
   def guardar_bruto
     dir = Rails.root.join('storage', 'coexistence_history', inbox.id.to_s)
     FileUtils.mkdir_p(dir)
-    meta = Array(value[:history]).first&.dig(:metadata) || {}
-    nome = format('%<t>d-chunk%<c>03d.json', t: Time.now.to_i, c: meta[:chunk_order].to_i)
-    File.write(dir.join(nome), JSON.pretty_generate(value.to_h))
-    Rails.logger.info("[CoexistenceSync] history bruto salvo em #{dir.join(nome)}")
+    arquivo = dir.join(nome_do_chunk)
+    File.write(arquivo, JSON.pretty_generate(value.to_h))
+    Rails.logger.info("[CoexistenceSync] history bruto salvo em #{arquivo}")
   rescue StandardError => e
     Rails.logger.error("[CoexistenceSync] falha ao guardar history bruto: #{e.class} #{e.message}")
+  end
+
+  def nome_do_chunk
+    meta = Array(value[:history]).first&.dig(:metadata) || {}
+    format('%<t>d-chunk%<c>03d.json', t: Time.now.to_i, c: meta[:chunk_order].to_i)
   end
 
   def digits(valor)
