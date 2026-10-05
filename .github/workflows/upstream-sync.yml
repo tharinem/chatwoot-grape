@@ -1,0 +1,94 @@
+name: Upstream sync (Chatwoot)
+
+# Toda segunda 09:00 UTC: procura a release mais nova do chatwoot/chatwoot que ainda
+# não está na `custom` e abre um PR `upgrade/<tag>` -> `custom`.
+# - Merge limpo: PR normal com o merge pronto para revisar.
+# - Conflito: PR em rascunho com a lista de arquivos em conflito; o merge é feito à mão
+#   seguindo docs/UPGRADE.md.
+# Nada é publicado nem implantado por aqui: o deploy só acontece depois do merge na `custom`.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      # O GITHUB_TOKEN não pode enviar commits que mexem em .github/workflows (o upstream
+      # mexe com frequência). Configure o secret UPSTREAM_SYNC_TOKEN (PAT fine-grained com
+      # contents, pull-requests e workflows) para esses casos; sem ele usa o GITHUB_TOKEN.
+      GH_TOKEN: ${{ secrets.UPSTREAM_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout custom
+        uses: actions/checkout@v4
+        with:
+          ref: custom
+          fetch-depth: 0
+          token: ${{ secrets.UPSTREAM_SYNC_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream tags
+        run: |
+          git remote add upstream https://github.com/chatwoot/chatwoot.git
+          git fetch upstream --no-tags '+refs/tags/v*:refs/tags/upstream/v*'
+
+      - name: Find latest release not in custom
+        id: find
+        run: |
+          LATEST=$(git tag -l 'upstream/v*' | sed 's#^upstream/##' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          if [ -z "$LATEST" ]; then
+            echo "Nenhuma tag encontrada no upstream."; exit 0
+          fi
+          if git merge-base --is-ancestor "upstream/$LATEST" HEAD; then
+            echo "custom já contém $LATEST. Nada a fazer."; exit 0
+          fi
+          BRANCH="upgrade/$LATEST"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "A branch $BRANCH já existe. Nada a fazer."; exit 0
+          fi
+          echo "tag=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Merge upstream and open PR
+        if: steps.find.outputs.tag != ''
+        env:
+          TAG: ${{ steps.find.outputs.tag }}
+          BRANCH: ${{ steps.find.outputs.branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+
+          if git merge --no-ff "upstream/$TAG" -m "chore(upstream): merge chatwoot $TAG"; then
+            git push origin "$BRANCH"
+            gh pr create --base custom --head "$BRANCH" \
+              --title "chore(upstream): atualizar para o Chatwoot $TAG" \
+              --body "Merge automático e sem conflitos do Chatwoot $TAG na \`custom\`.
+
+          Antes de aprovar, siga o checklist de docs/UPGRADE.md (notas da release, staging, smoke).
+
+          Release: https://github.com/chatwoot/chatwoot/releases/tag/$TAG"
+          else
+            CONFLICTS=$(git diff --name-only --diff-filter=U | sed 's/^/- `/; s/$/`/')
+            git merge --abort
+            git commit --allow-empty -m "chore(upstream): preparar merge do chatwoot $TAG"
+            git push origin "$BRANCH"
+            gh pr create --draft --base custom --head "$BRANCH" \
+              --title "chore(upstream): atualizar para o Chatwoot $TAG (conflitos)" \
+              --body "O merge automático do Chatwoot $TAG deu conflito nestes arquivos:
+
+          $CONFLICTS
+
+          Como resolver: siga docs/UPGRADE.md. Em resumo, nesta branch rode
+          \`git fetch https://github.com/chatwoot/chatwoot 'refs/tags/$TAG:refs/tags/upstream/$TAG' --no-tags\`,
+          depois \`git merge --no-ff upstream/$TAG\`, resolva mantendo o comportamento do upstream e
+          a intenção do patch da Grape (UPSTREAM_DIFF.md) e faça push.
+
+          Release: https://github.com/chatwoot/chatwoot/releases/tag/$TAG"
+          fi
