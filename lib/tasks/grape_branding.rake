@@ -1,13 +1,13 @@
 namespace :grape do
-  desc 'Apply Grape Ai branding to InstallationConfig'
+  desc 'Apply Grape AI branding to InstallationConfig'
   task branding: :environment do
     return unless ActiveRecord::Base.connection.table_exists?('installation_configs')
 
-    puts 'Applying Grape Ai branding...'
+    puts 'Applying Grape AI branding...'
 
     branding = {
-      'INSTALLATION_NAME' => 'Grape Ai',
-      'BRAND_NAME' => 'Grape Ai',
+      'INSTALLATION_NAME' => 'Grape AI',
+      'BRAND_NAME' => 'Grape AI',
       'LOGO' => '/brand-assets/grape-logo-light.png',
       'LOGO_DARK' => '/brand-assets/grape-logo-dark.png',
       'LOGO_THUMBNAIL' => '/brand-assets/grape-thumbnail.png',
@@ -23,6 +23,6 @@ namespace :grape do
     end
 
     GlobalConfig.clear_cache
-    puts 'Grape Ai branding applied successfully.'
+    puts 'Grape AI branding applied successfully.'
   end
 end
