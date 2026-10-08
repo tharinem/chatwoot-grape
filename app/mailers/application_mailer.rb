@@ -55,7 +55,8 @@ class ApplicationMailer < ActionMailer::Base
     # expose variables you want to be exposed in liquid
     locals = {
       global_config: GlobalConfig.get('BRAND_NAME', 'BRAND_URL'),
-      action_url: @action_url
+      action_url: @action_url,
+      logo_url: "#{ENV.fetch('FRONTEND_URL', '')}/brand-assets/grape-logo-email.png"
     }
 
     locals.merge({ attachment_url: @attachment_url }) if @attachment_url
