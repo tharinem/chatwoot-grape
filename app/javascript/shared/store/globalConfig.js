@@ -1,5 +1,6 @@
 import { parseBoolean } from '@chatwoot/utils';
 import { resolveMaximumFileUploadSize } from 'shared/helpers/FileHelper';
+import { parseIdleMinutes } from 'dashboard/helper/IdleLogoutTimer';
 
 const {
   API_CHANNEL_NAME: apiChannelName,
@@ -24,6 +25,7 @@ const {
   WIDGET_BRAND_URL: widgetBrandURL,
   DISABLE_USER_PROFILE_UPDATE: disableUserProfileUpdate,
   DEPLOYMENT_ENV: deploymentEnv,
+  IDLE_LOGOUT_MINUTES: idleLogoutMinutes,
 } = window.globalConfig || {};
 
 const state = {
@@ -41,6 +43,7 @@ const state = {
   gitSha,
   maximumFileUploadSize: resolveMaximumFileUploadSize(maximumFileUploadSize),
   hCaptchaSiteKey,
+  idleLogoutMinutes: parseIdleMinutes(idleLogoutMinutes),
   installationName,
   logo,
   logoDark,

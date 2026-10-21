@@ -315,6 +315,14 @@
   description: 'Disable rendering profile update page for users'
 ## ------ End of Configs added for enterprise clients ------ ##
 
+## ------ Grape: logout por inatividade ------ ##
+- name: IDLE_LOGOUT_MINUTES
+  display_title: 'Idle logout (minutes)'
+  value: 0
+  locked: false
+  description: 'Log users out of the dashboard after this many minutes without activity in any tab (a warning is shown 1 minute before). 0 disables it.'
+## ------ End of Grape: logout por inatividade ------ ##
+
 ## ------ Configs added for FCM v1 notifications ------ ##
 - name: FIREBASE_PROJECT_ID
   display_title: 'Firebase Project ID'
