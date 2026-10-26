@@ -104,4 +104,51 @@ describe('ContactHighlights', () => {
         .text()
     ).toContain('John');
   });
+
+  it('does not show desbloqueado as blocked', () => {
+    const wrapper = mountWith({ texto_exibicao: 'Cliente DESBLOQUEADO' });
+    expect(
+      wrapper.find('[data-test-id="contact-highlights-blocked"]').exists()
+    ).toBe(false);
+  });
+
+  it('shows faturamento when filled, using the attribute display name', () => {
+    mockGetters({
+      attributes: [
+        { attribute_key: 'faturamento', attribute_display_name: 'Faturamento' },
+      ],
+    });
+    const wrapper = mountWith({ faturamento: 'Fat 30/60dd' });
+    const extras = wrapper.findAll('[data-test-id="contact-highlights-extra"]');
+    expect(extras).toHaveLength(1);
+    expect(extras[0].text()).toContain('Faturamento');
+    expect(extras[0].text()).toContain('Fat 30/60dd');
+  });
+
+  it('hides faturamento when empty', () => {
+    const wrapper = mountWith({ faturamento: '' });
+    expect(wrapper.find('[data-test-id="contact-highlights"]').exists()).toBe(
+      false
+    );
+  });
+
+  it('falls back to the key and respects the configured order', () => {
+    mockGetters({
+      settings: {
+        contact_highlight: {
+          extra_attributes: ['razao_social', 'faturamento'],
+        },
+      },
+    });
+    const wrapper = mountWith({
+      faturamento: 'Fat 30dd',
+      razao_social: 'Doces LTDA',
+    });
+    const extras = wrapper.findAll('[data-test-id="contact-highlights-extra"]');
+    expect(extras.map(item => item.text())).toEqual([
+      expect.stringContaining('razao_social'),
+      expect.stringContaining('faturamento'),
+    ]);
+    expect(extras[0].text()).toContain('Doces LTDA');
+  });
 });

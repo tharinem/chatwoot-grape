@@ -14,7 +14,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const contact = computed(() => props.contact);
-const { config, highlight } = useContactHighlight(contact);
+const { config, highlight, extraHighlights } = useContactHighlight(contact);
 
 const getAttributesByModel = useMapGetter('attributes/getAttributesByModel');
 
@@ -44,7 +44,8 @@ const hasHighlights = computed(
   () =>
     !!highlight.value.displayText ||
     !!highlight.value.exclusiveSeller ||
-    highlight.value.isBlocked
+    highlight.value.isBlocked ||
+    extraHighlights.value.length > 0
 );
 </script>
 
@@ -106,6 +107,24 @@ const hasHighlights = computed(
             {{ highlight.exclusiveSeller }}
           </span>
         </div>
+      </div>
+
+      <div
+        v-for="item in extraHighlights"
+        :key="item.key"
+        class="flex flex-col gap-0.5 px-3 py-2 rounded-lg border border-n-weak bg-n-alpha-1"
+        data-test-id="contact-highlights-extra"
+      >
+        <span
+          class="text-xs font-medium uppercase tracking-wide text-n-slate-11"
+        >
+          {{ attributeLabel(item.key, item.key) }}
+        </span>
+        <span
+          class="text-sm font-semibold whitespace-pre-line break-words text-n-slate-12"
+        >
+          {{ item.value }}
+        </span>
       </div>
     </div>
   </div>

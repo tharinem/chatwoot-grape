@@ -3,6 +3,7 @@ import {
   DEFAULT_CONTACT_HIGHLIGHT_CONFIG,
   formatAttributeValue,
   getContactHighlight,
+  getExtraHighlights,
   isTruthyAttributeValue,
   resolveContactHighlightConfig,
 } from '../contactHighlight';
@@ -15,6 +16,7 @@ describe('contactHighlight', () => {
         blockedFlagAttributes: ['bloqueado'],
         blockedTextAttributes: ['texto_exibicao'],
         blockedTextTerms: ['bloquead'],
+        extraAttributes: ['faturamento'],
       });
       expect(resolveContactHighlightConfig({})).toEqual(
         resolveContactHighlightConfig()
@@ -29,6 +31,7 @@ describe('contactHighlight', () => {
           blocked_flag_attributes: 'credit_hold',
           blocked_text_attributes: ['popup', 'finance_note'],
           blocked_text_terms: ['hold'],
+          extra_attributes: ['billing', 'region'],
         },
       });
 
@@ -39,6 +42,7 @@ describe('contactHighlight', () => {
         blockedFlagAttributes: ['credit_hold'],
         blockedTextAttributes: ['popup', 'finance_note'],
         blockedTextTerms: ['hold'],
+        extraAttributes: ['billing', 'region'],
       });
     });
 
@@ -137,6 +141,32 @@ describe('contactHighlight', () => {
       ).toBe(CONTACT_HIGHLIGHT_STATUS.BLOCKED);
     });
 
+    it.each(['desbloqueado', 'Desbloqueada', 'Cliente DESBLOQUEADA em 10/10'])(
+      'does not flag the negated form %p',
+      text => {
+        expect(getContactHighlight({ texto_exibicao: text }).status).toBe(
+          CONTACT_HIGHLIGHT_STATUS.DEFAULT
+        );
+      }
+    );
+
+    it.each(['cliente bloqueado', 'BLOQUEADA p/ compra', 'Bloqueado'])(
+      'flags %p as blocked',
+      text => {
+        expect(getContactHighlight({ texto_exibicao: text }).status).toBe(
+          CONTACT_HIGHLIGHT_STATUS.BLOCKED
+        );
+      }
+    );
+
+    it('flags the text when a non negated occurrence also exists', () => {
+      expect(
+        getContactHighlight({
+          texto_exibicao: 'Desbloqueado em março, bloqueado de novo em maio',
+        }).status
+      ).toBe(CONTACT_HIGHLIGHT_STATUS.BLOCKED);
+    });
+
     it('gives priority to the blocked status over the exclusive seller', () => {
       const result = getContactHighlight({
         vendedor_exclusivo: 'Jenifer',
@@ -194,6 +224,64 @@ describe('contactHighlight', () => {
         exclusiveSeller: null,
         displayText: null,
       });
+    });
+  });
+
+  describe('getExtraHighlights', () => {
+    it('shows faturamento by default when filled', () => {
+      expect(getExtraHighlights({ faturamento: 'Fat 30/60dd' })).toEqual([
+        { key: 'faturamento', value: 'Fat 30/60dd' },
+      ]);
+    });
+
+    it('skips empty values', () => {
+      expect(getExtraHighlights({ faturamento: '  ' })).toEqual([]);
+      expect(getExtraHighlights({})).toEqual([]);
+      expect(getExtraHighlights(undefined)).toEqual([]);
+    });
+
+    it('respects the configured order', () => {
+      const config = resolveContactHighlightConfig({
+        contact_highlight: {
+          extra_attributes: ['razao_social', 'faturamento', 'codigo_cliente'],
+        },
+      });
+      const result = getExtraHighlights(
+        {
+          codigo_cliente: '123',
+          faturamento: 'Fat 30/60dd',
+          razao_social: 'Doces LTDA',
+        },
+        config
+      );
+      expect(result.map(item => item.key)).toEqual([
+        'razao_social',
+        'faturamento',
+        'codigo_cliente',
+      ]);
+    });
+
+    it('ignores duplicated keys and the display text / seller keys', () => {
+      const config = resolveContactHighlightConfig({
+        contact_highlight: {
+          extra_attributes: ['faturamento', 'texto_exibicao', 'faturamento'],
+        },
+      });
+      expect(
+        getExtraHighlights(
+          { faturamento: 'Fat 30dd', texto_exibicao: 'Aviso' },
+          config
+        )
+      ).toEqual([{ key: 'faturamento', value: 'Fat 30dd' }]);
+    });
+
+    it('returns nothing when disabled', () => {
+      const config = resolveContactHighlightConfig({
+        contact_highlight: { enabled: false },
+      });
+      expect(getExtraHighlights({ faturamento: 'Fat 30dd' }, config)).toEqual(
+        []
+      );
     });
   });
 });

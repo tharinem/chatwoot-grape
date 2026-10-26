@@ -13,8 +13,14 @@
  *     "display_text_attribute": "texto_exibicao",
  *     "blocked_flag_attributes": ["bloqueado"],
  *     "blocked_text_attributes": ["texto_exibicao"],
- *     "blocked_text_terms": ["bloquead"]
+ *     "blocked_text_terms": ["bloquead"],
+ *     "extra_attributes": ["faturamento"]
  *   }
+ *
+ * `extra_attributes` lists other contact attribute keys pinned in the top
+ * block (in that order, empty values skipped).
+ *
+ * Blocked text terms ignore negated forms, so "desbloqueado" does not count.
  *
  * Contacts without these attributes keep the default look.
  */
@@ -32,7 +38,12 @@ export const DEFAULT_CONTACT_HIGHLIGHT_CONFIG = Object.freeze({
   blockedFlagAttributes: Object.freeze(['bloqueado']),
   blockedTextAttributes: Object.freeze(['texto_exibicao']),
   blockedTextTerms: Object.freeze(['bloquead']),
+  extraAttributes: Object.freeze(['faturamento']),
 });
+
+// A term preceded by one of these prefixes in the same word is negated
+// ("desbloqueado", "DESBLOQUEADA").
+const NEGATION_PREFIXES = ['des'];
 
 const TRUTHY_STRINGS = ['true', 'sim', 'yes', 's', 'y', '1'];
 
@@ -88,6 +99,10 @@ export const resolveContactHighlightConfig = accountSettings => {
       custom.blocked_text_terms,
       defaults.blockedTextTerms
     ),
+    extraAttributes: pickList(
+      custom.extra_attributes,
+      defaults.extraAttributes
+    ),
   };
 };
 
@@ -128,7 +143,17 @@ const hasBlockedTerm = (value, terms) => {
   const normalized = normalizeText(text);
   return terms.some(term => {
     const normalizedTerm = normalizeText(term);
-    return normalizedTerm && normalized.includes(normalizedTerm);
+    if (!normalizedTerm) return false;
+    let index = normalized.indexOf(normalizedTerm);
+    while (index !== -1) {
+      const wordPrefix = normalized.slice(0, index).match(/\p{L}*$/u)[0];
+      const isNegated = NEGATION_PREFIXES.some(prefix =>
+        wordPrefix.endsWith(prefix)
+      );
+      if (!isNegated) return true;
+      index = normalized.indexOf(normalizedTerm, index + 1);
+    }
+    return false;
   });
 };
 
@@ -175,4 +200,31 @@ export const getContactHighlight = (
   else if (exclusiveSeller) status = CONTACT_HIGHLIGHT_STATUS.EXCLUSIVE_SELLER;
 
   return { status, isBlocked, exclusiveSeller, displayText };
+};
+
+/**
+ * Extra attributes pinned in the top block, in the configured order.
+ * Skips empty values and the display text / exclusive seller keys.
+ * @param {Object} [customAttributes] - `contact.custom_attributes`
+ * @param {Object} [config] - result of resolveContactHighlightConfig
+ * @returns {Array<{key: string, value: string}>}
+ */
+export const getExtraHighlights = (
+  customAttributes,
+  config = resolveContactHighlightConfig()
+) => {
+  if (!config.enabled) return [];
+  const attributes =
+    customAttributes && typeof customAttributes === 'object'
+      ? customAttributes
+      : {};
+  const reserved = [
+    config.displayTextAttribute,
+    config.exclusiveSellerAttribute,
+  ];
+
+  return [...new Set(config.extraAttributes)]
+    .filter(key => !reserved.includes(key))
+    .map(key => ({ key, value: formatAttributeValue(attributes[key]) }))
+    .filter(item => item.value);
 };

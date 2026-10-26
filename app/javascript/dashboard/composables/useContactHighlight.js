@@ -2,6 +2,7 @@ import { computed, unref } from 'vue';
 import { useMapGetter } from 'dashboard/composables/store';
 import {
   getContactHighlight,
+  getExtraHighlights,
   resolveContactHighlightConfig,
 } from 'dashboard/helper/contactHighlight';
 
@@ -23,5 +24,9 @@ export function useContactHighlight(contact) {
     getContactHighlight(unref(contact)?.custom_attributes, config.value)
   );
 
-  return { config, highlight };
+  const extraHighlights = computed(() =>
+    getExtraHighlights(unref(contact)?.custom_attributes, config.value)
+  );
+
+  return { config, highlight, extraHighlights };
 }
