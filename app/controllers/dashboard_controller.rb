@@ -24,6 +24,7 @@ class DashboardController < ActionController::Base
     DISABLE_USER_PROFILE_UPDATE
     DEPLOYMENT_ENV
     INSTALLATION_PRICING_PLAN
+    IDLE_LOGOUT_MINUTES
   ].freeze
 
   before_action :set_application_pack

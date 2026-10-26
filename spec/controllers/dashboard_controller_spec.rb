@@ -18,6 +18,17 @@ describe '/app/login', type: :request do
     end
   end
 
+  context 'with IDLE_LOGOUT_MINUTES configured' do
+    it 'exposes the idle logout minutes to the frontend global config' do
+      InstallationConfig.where(name: 'IDLE_LOGOUT_MINUTES').first_or_create!(value: 0).update!(value: 15)
+      GlobalConfig.clear_cache
+
+      get '/app/login'
+      expect(response).to have_http_status(:success)
+      expect(response.body).to include '"IDLE_LOGOUT_MINUTES":15'
+    end
+  end
+
   context 'with non-HTML format' do
     it 'returns not acceptable for JSON with error message' do
       get '/app/login', headers: { 'Accept' => 'application/json' }
