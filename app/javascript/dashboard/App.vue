@@ -20,6 +20,7 @@ import {
 } from './helper/pushHelper';
 import ReconnectService from 'dashboard/helper/ReconnectService';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useIdleLogoutMinutes } from 'dashboard/composables/useIdleLogoutMinutes';
 
 export default {
   name: 'App',
@@ -40,6 +41,8 @@ export default {
     // Use the font size composable (it automatically sets up the watcher)
     const { currentFontSize } = useFontSize();
     const { uiSettings } = useUISettings();
+    // Grape: logout por inatividade (por conta, com fallback da instalacao).
+    const idleLogoutMinutes = useIdleLogoutMinutes();
 
     return {
       router,
@@ -47,6 +50,7 @@ export default {
       currentAccountId: accountId,
       currentFontSize,
       uiSettings,
+      idleLogoutMinutes,
     };
   },
   data() {
@@ -62,11 +66,7 @@ export default {
       currentUser: 'getCurrentUser',
       authUIFlags: 'getAuthUIFlags',
       accountUIFlags: 'accounts/getUIFlags',
-      globalConfig: 'globalConfig/get',
     }),
-    idleLogoutMinutes() {
-      return this.globalConfig?.idleLogoutMinutes || 0;
-    },
     hideOnOnboardingView() {
       return !isOnOnboardingView(this.$route);
     },

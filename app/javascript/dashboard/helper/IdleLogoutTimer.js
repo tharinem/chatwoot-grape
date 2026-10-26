@@ -29,6 +29,24 @@ export const parseIdleMinutes = value => {
   return Number.isFinite(minutes) && minutes > 0 ? minutes : 0;
 };
 
+// Chave em `account.settings` (jsonb) que liga o logout so para uma conta.
+export const ACCOUNT_IDLE_LOGOUT_SETTING = 'idle_logout_minutes';
+
+/**
+ * Minutos efetivos para a conta atual: o valor da conta
+ * (`account.settings.idle_logout_minutes`, numero ou string) vence quando e
+ * positivo; senao vale o da instalacao (`IDLE_LOGOUT_MINUTES`, 0 = desligado).
+ * @param {Object} [accountSettings] - `account.settings`
+ * @param {number|string} [installationMinutes]
+ * @returns {number}
+ */
+export const resolveIdleLogoutMinutes = (
+  accountSettings,
+  installationMinutes
+) =>
+  parseIdleMinutes(accountSettings?.[ACCOUNT_IDLE_LOGOUT_SETTING]) ||
+  parseIdleMinutes(installationMinutes);
+
 const safeStorage = storage => ({
   read(key) {
     try {

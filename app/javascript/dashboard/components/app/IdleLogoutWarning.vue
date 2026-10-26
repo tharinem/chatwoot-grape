@@ -1,6 +1,7 @@
 <script setup>
-// Grape: logout automatico por inatividade (IDLE_LOGOUT_MINUTES no Super Admin).
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+// Grape: logout automatico por inatividade. Minutos vem da conta
+// (account.settings.idle_logout_minutes) ou, sem ela, de IDLE_LOGOUT_MINUTES.
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import Auth from 'dashboard/api/auth';
 import { clearCookiesOnLogout } from 'dashboard/store/utils/api';
 import IdleLogoutTimer from 'dashboard/helper/IdleLogoutTimer';
@@ -26,7 +27,15 @@ const logout = () => {
 
 const stayConnected = () => timer?.markActivity({ force: true });
 
-onMounted(() => {
+const stopTimer = () => {
+  timer?.stop();
+  timer = null;
+  showWarning.value = false;
+};
+
+const startTimer = () => {
+  stopTimer();
+  if (!(props.timeoutMinutes > 0)) return;
   timer = new IdleLogoutTimer({
     timeoutMs: props.timeoutMinutes * 60 * 1000,
     onWarn: remainingMs => {
@@ -42,12 +51,12 @@ onMounted(() => {
     },
   });
   timer.start();
-});
+};
 
-onBeforeUnmount(() => {
-  timer?.stop();
-  timer = null;
-});
+onMounted(startTimer);
+// Trocar de conta pode mudar o tempo (cada conta tem o seu): reinicia.
+watch(() => props.timeoutMinutes, startTimer);
+onBeforeUnmount(stopTimer);
 </script>
 
 <template>

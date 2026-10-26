@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import IdleLogoutTimer, {
   IDLE_LAST_ACTIVITY_KEY,
   parseIdleMinutes,
+  resolveIdleLogoutMinutes,
 } from '../IdleLogoutTimer';
 
 const MINUTE = 60 * 1000;
@@ -32,6 +33,35 @@ describe('parseIdleMinutes', () => {
   it('parses positive numbers and numeric strings', () => {
     expect(parseIdleMinutes(30)).toBe(30);
     expect(parseIdleMinutes('15')).toBe(15);
+  });
+});
+
+describe('resolveIdleLogoutMinutes', () => {
+  it('account setting wins over the installation value', () => {
+    expect(resolveIdleLogoutMinutes({ idle_logout_minutes: 30 }, 10)).toBe(30);
+  });
+
+  it('accepts the account setting as a string', () => {
+    expect(resolveIdleLogoutMinutes({ idle_logout_minutes: '30' }, 0)).toBe(30);
+  });
+
+  it('falls back to the installation value when the account value is 0, invalid or absent', () => {
+    [
+      { idle_logout_minutes: 0 },
+      { idle_logout_minutes: '0' },
+      { idle_logout_minutes: 'abc' },
+      {},
+      null,
+      undefined,
+    ].forEach(settings => {
+      expect(resolveIdleLogoutMinutes(settings, 15)).toBe(15);
+      expect(resolveIdleLogoutMinutes(settings, '15')).toBe(15);
+    });
+  });
+
+  it('is 0 (off) when both are off', () => {
+    expect(resolveIdleLogoutMinutes({}, 0)).toBe(0);
+    expect(resolveIdleLogoutMinutes(undefined, undefined)).toBe(0);
   });
 });
 

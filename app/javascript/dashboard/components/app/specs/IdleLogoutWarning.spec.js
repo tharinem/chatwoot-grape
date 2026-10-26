@@ -14,9 +14,9 @@ vi.mock('dashboard/store/utils/api', () => ({
 
 const MINUTE = 60 * 1000;
 
-const mountWarning = () =>
+const mountWarning = (timeoutMinutes = 2) =>
   mount(IdleLogoutWarning, {
-    props: { timeoutMinutes: 2 },
+    props: { timeoutMinutes },
     global: {
       mocks: { $t: (key, params) => `${key}:${params?.seconds ?? ''}` },
       stubs: {
@@ -77,6 +77,39 @@ describe('IdleLogoutWarning', () => {
     vi.advanceTimersByTime(2 * MINUTE);
     expect(Auth.logout).not.toHaveBeenCalled();
     expect(clearCookiesOnLogout).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+
+  it('does not start a timer nor show a warning when minutes is 0', async () => {
+    const wrapper = mountWarning(0);
+    vi.advanceTimersByTime(120 * MINUTE);
+    await nextTick();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(Auth.logout).not.toHaveBeenCalled();
+    expect(clearCookiesOnLogout).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('restarts with the new value when the account (minutes) changes', async () => {
+    const wrapper = mountWarning(2);
+    vi.advanceTimersByTime(MINUTE + 5000);
+    await nextTick();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+
+    // Troca para uma conta com 10 min: aviso some e o relogio recomeca.
+    await wrapper.setProps({ timeoutMinutes: 10 });
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    vi.advanceTimersByTime(8 * MINUTE);
+    await nextTick();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    vi.advanceTimersByTime(2 * MINUTE);
+    expect(Auth.logout).toHaveBeenCalledTimes(1);
+
+    // Troca para uma conta sem logout: nada mais dispara.
+    Auth.logout.mockClear();
+    await wrapper.setProps({ timeoutMinutes: 0 });
+    vi.advanceTimersByTime(60 * MINUTE);
+    expect(Auth.logout).not.toHaveBeenCalled();
     wrapper.unmount();
   });
 

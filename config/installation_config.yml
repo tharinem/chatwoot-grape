@@ -320,7 +320,7 @@
   display_title: 'Idle logout (minutes)'
   value: 0
   locked: false
-  description: 'Log users out of the dashboard after this many minutes without activity in any tab (a warning is shown 1 minute before). 0 disables it.'
+  description: 'Default for all accounts: log users out of the dashboard after this many minutes without activity in any tab (a warning is shown 1 minute before). 0 disables it. An account can override it with settings.idle_logout_minutes.'
 ## ------ End of Grape: logout por inatividade ------ ##
 
 ## ------ Configs added for FCM v1 notifications ------ ##
