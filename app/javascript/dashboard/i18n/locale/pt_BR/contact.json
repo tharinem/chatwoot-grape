@@ -60,6 +60,11 @@
       "CONTACT_LABELS": "Etiquetas de contato",
       "PREVIOUS_CONVERSATIONS": "Conversas anteriores",
       "NO_RECORDS_FOUND": "Nenhum atributo encontrado"
+    },
+    "HIGHLIGHTS": {
+      "DISPLAY_TEXT": "Texto de exibição",
+      "EXCLUSIVE_SELLER": "Vendedor exclusivo",
+      "BLOCKED_BADGE": "Cliente bloqueado"
     }
   },
   "EDIT_CONTACT": {

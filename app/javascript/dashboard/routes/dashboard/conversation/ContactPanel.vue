@@ -14,6 +14,7 @@ import ContactConversations from './ContactConversations.vue';
 import ConversationAction from './ConversationAction.vue';
 import ConversationParticipant from './ConversationParticipant.vue';
 import ContactInfo from './contact/ContactInfo.vue';
+import ContactHighlights from './contact/ContactHighlights.vue';
 import ContactNotes from './contact/ContactNotes.vue';
 import ConversationInfo from './ConversationInfo.vue';
 import CustomAttributes from './customAttributes/CustomAttributes.vue';
@@ -146,6 +147,7 @@ onMounted(() => {
       :title="$t('CONVERSATION.SIDEBAR.CONTACT')"
       @close="closeContactPanel"
     />
+    <ContactHighlights :contact="contact" />
     <ContactInfo :contact="contact" :channel-type="channelType" />
     <div class="px-2 pb-8 list-group">
       <Draggable

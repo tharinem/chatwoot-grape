@@ -61,6 +61,11 @@
       "CONTACT_LABELS": "Contact Labels",
       "PREVIOUS_CONVERSATIONS": "Previous Conversations",
       "NO_RECORDS_FOUND": "No attributes found"
+    },
+    "HIGHLIGHTS": {
+      "DISPLAY_TEXT": "Display text",
+      "EXCLUSIVE_SELLER": "Exclusive seller",
+      "BLOCKED_BADGE": "Customer blocked"
     }
   },
   "EDIT_CONTACT": {

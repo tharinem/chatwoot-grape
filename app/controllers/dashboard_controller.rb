@@ -27,6 +27,7 @@ class DashboardController < ActionController::Base
     DISABLE_META_MESSAGE_SENDING
     DEPLOYMENT_ENV
     INSTALLATION_PRICING_PLAN
+    IDLE_LOGOUT_MINUTES
   ].freeze
 
   before_action :set_application_pack

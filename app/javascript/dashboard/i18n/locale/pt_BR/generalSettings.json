@@ -149,6 +149,10 @@
       "REFRESH": "Atualizar"
     }
   },
+  "IDLE_LOGOUT": {
+    "WARNING": "Por segurança, sua sessão termina em {seconds}s por falta de atividade.",
+    "STAY_SIGNED_IN": "Continuar conectado"
+  },
   "COMMAND_BAR": {
     "SEARCH_PLACEHOLDER": "Pesquisar ou pular para",
     "SNOOZE_PLACEHOLDER": "Digite um horário, por exemplo: amanhã, 2 horas, próxima sexta-feira, 15 de jan...",

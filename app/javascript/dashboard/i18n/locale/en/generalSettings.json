@@ -149,6 +149,10 @@
       "REFRESH": "Refresh"
     }
   },
+  "IDLE_LOGOUT": {
+    "WARNING": "For security, you will be signed out in {seconds}s due to inactivity.",
+    "STAY_SIGNED_IN": "Stay signed in"
+  },
   "COMMAND_BAR": {
     "SEARCH_PLACEHOLDER": "Search or jump to",
     "SNOOZE_PLACEHOLDER": "Type a time e.g. tomorrow, 2 hours, next friday, jan 15...",

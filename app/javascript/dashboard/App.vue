@@ -7,6 +7,7 @@ import StatusBanner from './components/app/StatusBanner.vue';
 import PaymentPendingBanner from './components/app/PaymentPendingBanner.vue';
 import PendingEmailVerificationBanner from './components/app/PendingEmailVerificationBanner.vue';
 import LowBackupCodesBanner from './components/app/LowBackupCodesBanner.vue';
+import IdleLogoutWarning from './components/app/IdleLogoutWarning.vue';
 import vueActionCable from './helper/actionCable';
 import { useRouter } from 'vue-router';
 import { useStore } from 'dashboard/composables/store';
@@ -21,6 +22,7 @@ import {
 } from './helper/pushHelper';
 import ReconnectService from 'dashboard/helper/ReconnectService';
 import { useUISettings } from 'dashboard/composables/useUISettings';
+import { useIdleLogoutMinutes } from 'dashboard/composables/useIdleLogoutMinutes';
 
 export default {
   name: 'App',
@@ -34,6 +36,7 @@ export default {
     WootSnackbarBox,
     PendingEmailVerificationBanner,
     LowBackupCodesBanner,
+    IdleLogoutWarning,
   },
   setup() {
     const router = useRouter();
@@ -42,6 +45,8 @@ export default {
     // Use the font size composable (it automatically sets up the watcher)
     const { currentFontSize } = useFontSize();
     const { uiSettings } = useUISettings();
+    // Grape: logout por inatividade (por conta, com fallback da instalacao).
+    const idleLogoutMinutes = useIdleLogoutMinutes();
 
     return {
       router,
@@ -49,6 +54,7 @@ export default {
       currentAccountId: accountId,
       currentFontSize,
       uiSettings,
+      idleLogoutMinutes,
     };
   },
   data() {
@@ -146,6 +152,10 @@ export default {
       <PendingEmailVerificationBanner v-if="hideOnOnboardingView" />
       <PaymentPendingBanner v-if="hideOnOnboardingView" />
       <LowBackupCodesBanner v-if="hideOnOnboardingView" />
+      <IdleLogoutWarning
+        v-if="idleLogoutMinutes > 0"
+        :timeout-minutes="idleLogoutMinutes"
+      />
     </template>
     <router-view v-slot="{ Component }">
       <transition name="fade" mode="out-in">
