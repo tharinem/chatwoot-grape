@@ -23,6 +23,7 @@ import GreetingsEditor from 'shared/components/GreetingsEditor.vue';
 import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
 import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
+import WhatsappTemplatesPage from './settingsPage/WhatsappTemplatesPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
 import AccountHealth from './components/AccountHealth.vue';
 import { FEATURE_FLAGS } from '../../../../featureFlags';
@@ -69,6 +70,7 @@ export default {
     SelectInput,
     AccountHealth,
     Widget,
+    WhatsappTemplatesPage,
   },
   mixins: [inboxMixin],
   setup() {
@@ -201,6 +203,10 @@ export default {
           {
             key: 'whatsapp-health',
             name: this.$t('INBOX_MGMT.TABS.ACCOUNT_HEALTH'),
+          },
+          {
+            key: 'whatsapp-templates',
+            name: this.$t('INBOX_MGMT.TABS.TEMPLATES'),
           },
         ];
       }
@@ -1188,6 +1194,9 @@ export default {
             :is-registering-webhook="isRegisteringWebhook"
             @register-webhook="registerWebhook"
           />
+        </div>
+        <div v-if="selectedTabKey === 'whatsapp-templates'">
+          <WhatsappTemplatesPage :inbox="inbox" />
         </div>
       </div>
     </section>
