@@ -1,8 +1,11 @@
 import { mount } from '@vue/test-utils';
 import { useMapGetter } from 'dashboard/composables/store';
+import { withFullI18n } from 'test-i18n';
 import ContactHighlights from '../ContactHighlights.vue';
 
 vi.mock('dashboard/composables/store');
+
+withFullI18n();
 
 const mockGetters = ({ settings = {}, attributes = [] } = {}) => {
   useMapGetter.mockImplementation(getter => {
