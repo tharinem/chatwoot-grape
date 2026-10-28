@@ -117,6 +117,7 @@
         "SUCCESS": "Modelo enviado para a Meta. Status: {status}. A aprovação leva de minutos a 24 horas.",
         "META_ERROR": "A Meta recusou o modelo:",
         "GENERIC_ERROR": "Não foi possível criar o modelo. Tente novamente.",
+        "REQUEST_FAILED": "Não foi possível falar com a Meta agora. Clique em Atualizar da Meta antes de tentar de novo, o modelo pode ter sido criado.",
         "FIX_ERRORS": "Corrija os campos destacados."
       },
       "TIPS": {

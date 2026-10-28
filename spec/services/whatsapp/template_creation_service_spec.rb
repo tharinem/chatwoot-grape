@@ -252,16 +252,64 @@ RSpec.describe Whatsapp::TemplateCreationService do
     end
 
     context 'when the request fails' do
+      let(:request_failed) { { success: false, error_type: :request_failed, message: 'request_failed' } }
+
       it 'returns a readable error on timeout' do
         stub_request(:post, templates_url).to_timeout
 
-        expect(perform(base_params)).to eq(success: false, error_type: :meta, message: 'request_failed')
+        expect(perform(base_params)).to eq(request_failed)
       end
 
       it 'returns a readable error on invalid json' do
         stub_request(:post, templates_url).to_return(status: 500, body: '<html>oops</html>')
 
-        expect(perform(base_params)).to eq(success: false, error_type: :meta, message: 'request_failed')
+        expect(perform(base_params)).to eq(request_failed)
+      end
+
+      [Errno::ECONNREFUSED, Errno::ECONNRESET, Net::WriteTimeout, OpenSSL::SSL::SSLError, EOFError].each do |error_class|
+        it "returns a readable error on #{error_class}" do
+          stub_request(:post, templates_url).to_raise(error_class)
+
+          expect(perform(base_params)).to eq(request_failed)
+        end
+      end
+    end
+
+    context 'when Meta answers 2xx with an unexpected body' do
+      it 'treats a non-json body as success' do
+        stub_request(:post, templates_url).to_return(status: 200, body: 'ok')
+
+        result = perform(base_params)
+
+        expect(result[:success]).to be(true)
+        expect(result[:name]).to eq('boas_vindas')
+      end
+
+      it 'treats a json array body as success' do
+        stub_request(:post, templates_url).to_return(status: 200, body: '[]')
+
+        expect(perform(base_params)[:success]).to be(true)
+      end
+    end
+
+    context 'when buttons come in an unexpected shape' do
+      it 'accepts the indexed hash form' do
+        stub_success
+        buttons = { '0' => { type: 'QUICK_REPLY', text: 'Quero' } }
+
+        expect(perform(base_params.merge(buttons: buttons))[:success]).to be(true)
+        expect(
+          a_request(:post, templates_url).with do |req|
+            JSON.parse(req.body)['components'].last == { 'type' => 'BUTTONS', 'buttons' => [{ 'type' => 'QUICK_REPLY', 'text' => 'Quero' }] }
+          end
+        ).to have_been_made
+      end
+
+      it 'returns a validation error for non-hash entries instead of raising' do
+        result = perform(base_params.merge(buttons: ['x']))
+
+        expect(result[:error_type]).to eq(:validation)
+        expect(result[:errors]).to include({ field: 'buttons', code: 'invalid_type' })
       end
     end
 

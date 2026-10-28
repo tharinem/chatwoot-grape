@@ -11,6 +11,15 @@ class Whatsapp::TemplateDraftValidator
   BUTTON_TEXT_MAX_LENGTH = 25
   MAX_QUICK_REPLIES = 3
 
+  # Accepts an array of buttons or the indexed-hash form ({ "0" => {...} }).
+  # Entries that are not hashes become empty hashes so they fail validation
+  # instead of raising.
+  def self.normalize_buttons(raw)
+    raw = raw.to_unsafe_h if raw.respond_to?(:to_unsafe_h)
+    raw = raw.values if raw.is_a?(Hash)
+    Array(raw).map { |button| button.is_a?(Hash) ? button.with_indifferent_access : {}.with_indifferent_access }
+  end
+
   def initialize(params)
     @params = params.to_h.with_indifferent_access
     @errors = []
@@ -31,7 +40,7 @@ class Whatsapp::TemplateDraftValidator
   def header_text = @params[:header_text].to_s
   def header_example = @params[:header_example].to_s
   def footer = @params[:footer].to_s
-  def buttons = Array(@params[:buttons]).map { |button| button.to_h.with_indifferent_access }
+  def buttons = self.class.normalize_buttons(@params[:buttons])
 
   def add_error(field, code)
     @errors << { field: field, code: code }

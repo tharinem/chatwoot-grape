@@ -39,7 +39,8 @@ const draft = reactive({
 
 const buttonType = ref('');
 const errors = ref([]);
-const metaError = ref('');
+// { title, message }: title is only set when Meta itself rejected the template
+const requestError = ref(null);
 const isSubmitting = ref(false);
 
 const categoryOptions = computed(() => [
@@ -141,6 +142,10 @@ const messageTypeFor = field => (errorFor(field) ? 'error' : 'info');
 
 const counter = (value, max) => `${String(value || '').length}/${max}`;
 
+const isMetaRejection = data =>
+  data.error_type === 'meta' ||
+  (!data.error_type && Boolean(data.details?.code));
+
 const handleRequestError = error => {
   const data = error?.response?.data || {};
   if (Array.isArray(data.errors)) {
@@ -148,13 +153,43 @@ const handleRequestError = error => {
     useAlert(t('WHATSAPP_TEMPLATES.MANAGE.FORM.FIX_ERRORS'));
     return;
   }
-  // Show Meta's message exactly as returned, without masking it
-  metaError.value =
-    data.error || t('WHATSAPP_TEMPLATES.MANAGE.FORM.GENERIC_ERROR');
+  if (data.error_type === 'request_failed' || data.error === 'request_failed') {
+    // The request may have reached Meta: ask for a refresh before retrying
+    requestError.value = {
+      title: '',
+      message: t('WHATSAPP_TEMPLATES.MANAGE.FORM.REQUEST_FAILED'),
+    };
+    return;
+  }
+  if (isMetaRejection(data) && data.error) {
+    // Show Meta's message exactly as returned, without masking it
+    requestError.value = {
+      title: t('WHATSAPP_TEMPLATES.MANAGE.FORM.META_ERROR'),
+      message: data.error,
+    };
+    return;
+  }
+  requestError.value = {
+    title: '',
+    message: t('WHATSAPP_TEMPLATES.MANAGE.FORM.GENERIC_ERROR'),
+  };
+};
+
+const STATUS_LABELS = {
+  APPROVED: () => t('WHATSAPP_TEMPLATES.MANAGE.STATUS.APPROVED'),
+  PENDING: () => t('WHATSAPP_TEMPLATES.MANAGE.STATUS.PENDING'),
+  REJECTED: () => t('WHATSAPP_TEMPLATES.MANAGE.STATUS.REJECTED'),
+  PAUSED: () => t('WHATSAPP_TEMPLATES.MANAGE.STATUS.PAUSED'),
+  DISABLED: () => t('WHATSAPP_TEMPLATES.MANAGE.STATUS.DISABLED'),
+};
+
+const statusLabel = status => {
+  const label = STATUS_LABELS[String(status || '').toUpperCase()];
+  return label ? label() : t('WHATSAPP_TEMPLATES.MANAGE.STATUS.UNKNOWN');
 };
 
 const submit = async () => {
-  metaError.value = '';
+  requestError.value = null;
   errors.value = validateTemplateDraft(draft);
   if (errors.value.length) {
     useAlert(t('WHATSAPP_TEMPLATES.MANAGE.FORM.FIX_ERRORS'));
@@ -170,7 +205,7 @@ const submit = async () => {
     const template = response?.data?.template || {};
     useAlert(
       t('WHATSAPP_TEMPLATES.MANAGE.FORM.SUCCESS', {
-        status: template.status || 'PENDING',
+        status: statusLabel(template.status || 'PENDING'),
       })
     );
     emit('created', template);
@@ -279,13 +314,13 @@ const submit = async () => {
         data-test-id="body-examples"
       >
         <Input
-          v-for="(variable, index) in bodyVariables"
-          :key="variable"
-          v-model="draft.bodyExamples[index]"
-          :name="`body_example_${variable}`"
+          v-for="position in bodyVariables.length"
+          :key="position"
+          v-model="draft.bodyExamples[position - 1]"
+          :name="`body_example_${position}`"
           :label="
             $t('WHATSAPP_TEMPLATES.MANAGE.FORM.VARIABLE_EXAMPLE', {
-              variable: `{{${index + 1}}}`,
+              variable: `{{${position}}}`,
             })
           "
         />
@@ -391,14 +426,20 @@ const submit = async () => {
       </div>
 
       <div
-        v-if="metaError"
+        v-if="requestError"
         class="rounded-lg bg-n-alpha-2 p-3 text-sm text-n-ruby-11"
         data-test-id="meta-error"
       >
-        <p class="font-medium">
-          {{ $t('WHATSAPP_TEMPLATES.MANAGE.FORM.META_ERROR') }}
+        <p
+          v-if="requestError.title"
+          class="font-medium"
+          data-test-id="meta-error-title"
+        >
+          {{ requestError.title }}
         </p>
-        <p class="whitespace-pre-wrap break-words">{{ metaError }}</p>
+        <p class="whitespace-pre-wrap break-words">
+          {{ requestError.message }}
+        </p>
       </div>
 
       <div class="flex gap-2">

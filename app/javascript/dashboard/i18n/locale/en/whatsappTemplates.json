@@ -117,6 +117,7 @@
         "SUCCESS": "Template sent to Meta. Status: {status}. Approval can take from minutes to 24 hours.",
         "META_ERROR": "Meta rejected the template:",
         "GENERIC_ERROR": "Could not create the template. Please try again.",
+        "REQUEST_FAILED": "Could not reach Meta right now. Click Refresh from Meta before trying again, the template may have been created.",
         "FIX_ERRORS": "Please fix the highlighted fields."
       },
       "TIPS": {

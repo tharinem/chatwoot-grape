@@ -12,7 +12,8 @@ class Api::V1::Accounts::InboxMessageTemplatesController < Api::V1::Accounts::Ba
     elsif result[:error_type] == :validation
       render json: { errors: result[:errors] }, status: :unprocessable_entity
     else
-      render json: { error: result[:message], details: result[:details] || {} }, status: :unprocessable_entity
+      render json: { error: result[:message], error_type: result[:error_type], details: result[:details] || {} },
+             status: :unprocessable_entity
     end
   rescue ActionController::ParameterMissing
     render json: { error: 'Template parameters are required' }, status: :unprocessable_entity
@@ -32,7 +33,10 @@ class Api::V1::Accounts::InboxMessageTemplatesController < Api::V1::Accounts::Ba
   end
 
   def template_params
-    params.require(:template).permit(
+    template = params.require(:template)
+    raise ActionController::ParameterMissing, :template unless template.is_a?(ActionController::Parameters)
+
+    template.permit(
       :name, :category, :language, :body, :header_text, :header_example, :footer,
       body_examples: [], buttons: [:type, :text, :url, :example]
     )

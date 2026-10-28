@@ -88,6 +88,7 @@ describe('WhatsappTemplateForm', () => {
       response: {
         data: {
           error: 'Já existe um modelo com esse nome em pt_BR.',
+          error_type: 'meta',
           details: { code: 100 },
         },
       },
@@ -101,7 +102,81 @@ describe('WhatsappTemplateForm', () => {
     expect(wrapper.find('[data-test-id="meta-error"]').text()).toContain(
       'Já existe um modelo com esse nome em pt_BR.'
     );
+    expect(wrapper.find('[data-test-id="meta-error-title"]').exists()).toBe(
+      true
+    );
     expect(wrapper.emitted('created')).toBeUndefined();
+  });
+
+  it('asks for a refresh instead of blaming Meta when the request failed', async () => {
+    WhatsappMessageTemplatesAPI.create.mockRejectedValue({
+      response: {
+        data: {
+          error: 'request_failed',
+          error_type: 'request_failed',
+          details: {},
+        },
+      },
+    });
+    const wrapper = mountForm();
+    await fillValidDraft(wrapper);
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    const box = wrapper.find('[data-test-id="meta-error"]');
+    expect(box.text()).toContain('Refresh from Meta');
+    expect(box.text()).not.toContain('request_failed');
+    expect(wrapper.find('[data-test-id="meta-error-title"]').exists()).toBe(
+      false
+    );
+  });
+
+  it('shows a generic error without the Meta heading for other failures', async () => {
+    WhatsappMessageTemplatesAPI.create.mockRejectedValue({
+      response: { status: 500, data: '<html>oops</html>' },
+    });
+    const wrapper = mountForm();
+    await fillValidDraft(wrapper);
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(wrapper.find('[data-test-id="meta-error"]').text()).toContain(
+      'Could not create the template'
+    );
+    expect(wrapper.find('[data-test-id="meta-error-title"]').exists()).toBe(
+      false
+    );
+  });
+
+  it('shows the translated status in the success alert', async () => {
+    WhatsappMessageTemplatesAPI.create.mockResolvedValue({
+      data: { template: { status: 'APPROVED' } },
+    });
+    const wrapper = mountForm();
+    await fillValidDraft(wrapper);
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(useAlert).toHaveBeenLastCalledWith(
+      expect.stringContaining('Approved')
+    );
+  });
+
+  it('labels each example field with the position used in the payload', async () => {
+    const wrapper = mountForm();
+    await wrapper.find('textarea').setValue('Oi {{2}}, pedido {{1}} saiu.');
+
+    const inputs = wrapper.findAll('[data-test-id="body-examples"] input');
+    expect(inputs.map(input => input.attributes('name'))).toEqual([
+      'body_example_1',
+      'body_example_2',
+    ]);
+    expect(wrapper.find('[data-test-id="body-examples"]').text()).toContain(
+      'Example for {{1}}'
+    );
   });
 
   it('shows backend validation errors next to the fields', async () => {

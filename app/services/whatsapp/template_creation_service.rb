@@ -4,7 +4,11 @@ class Whatsapp::TemplateCreationService
   VARIABLE_PATTERN = Whatsapp::TemplateDraftValidator::VARIABLE_PATTERN
   URL_TRAILING_VARIABLE = Whatsapp::TemplateDraftValidator::URL_TRAILING_VARIABLE
   REQUEST_TIMEOUT = 15
-  REQUEST_ERRORS = [HTTParty::Error, Net::OpenTimeout, Net::ReadTimeout, SocketError, JSON::ParserError].freeze
+  # SystemCallError covers every Errno::* (ECONNREFUSED, ECONNRESET, EHOSTUNREACH...)
+  REQUEST_ERRORS = [
+    HTTParty::Error, Net::OpenTimeout, Net::ReadTimeout, Net::WriteTimeout, SocketError, EOFError,
+    OpenSSL::SSL::SSLError, SystemCallError, JSON::ParserError
+  ].freeze
 
   def initialize(channel:, params:)
     @channel = channel
@@ -19,7 +23,7 @@ class Whatsapp::TemplateCreationService
     process_response(response)
   rescue *REQUEST_ERRORS => e
     Rails.logger.warn "[WHATSAPP TEMPLATE] Template creation request failed: #{e.class.name}"
-    { success: false, error_type: :meta, message: 'request_failed' }
+    request_failed_result
   end
 
   private
@@ -57,7 +61,7 @@ class Whatsapp::TemplateCreationService
   end
 
   def buttons
-    Array(@params[:buttons]).map { |button| button.to_h.with_indifferent_access }
+    Whatsapp::TemplateDraftValidator.normalize_buttons(@params[:buttons])
   end
 
   def variables_in(text)
@@ -116,11 +120,26 @@ class Whatsapp::TemplateCreationService
     "#{base}/#{WHATSAPP_API_VERSION}/#{@channel.provider_config['business_account_id']}/message_templates"
   end
 
+  # Success is decided by the HTTP status only: a 2xx means Meta accepted the
+  # template, even if the body is not the JSON object we expect.
   def process_response(response)
-    data = response.body.present? ? JSON.parse(response.body) : {}
+    data = parse_body(response.body)
     return success_result(data) if response.success?
 
     meta_error_result(data)
+  end
+
+  def parse_body(raw)
+    return {} if raw.blank?
+
+    parsed = JSON.parse(raw)
+    parsed.is_a?(Hash) ? parsed : {}
+  rescue JSON::ParserError
+    {}
+  end
+
+  def request_failed_result
+    { success: false, error_type: :request_failed, message: 'request_failed' }
   end
 
   def success_result(data)
@@ -135,8 +154,10 @@ class Whatsapp::TemplateCreationService
   end
 
   def meta_error_result(data)
-    error = data.is_a?(Hash) ? (data['error'] || {}) : {}
+    error = data['error'].is_a?(Hash) ? data['error'] : {}
     Rails.logger.warn "[WHATSAPP TEMPLATE] Template creation rejected: code=#{error['code']} subcode=#{error['error_subcode']}"
+    return request_failed_result if error.empty?
+
     {
       success: false,
       error_type: :meta,

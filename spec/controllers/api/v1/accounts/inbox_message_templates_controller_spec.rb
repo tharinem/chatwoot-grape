@@ -91,6 +91,7 @@ RSpec.describe Api::V1::Accounts::InboxMessageTemplatesController, type: :reques
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body['error']).to eq('Nome já existe.')
+        expect(response.parsed_body['error_type']).to eq('meta')
         expect(response.parsed_body['details']).to include('code' => 100, 'error_subcode' => 2_388_023)
       end
 
@@ -110,6 +111,22 @@ RSpec.describe Api::V1::Accounts::InboxMessageTemplatesController, type: :reques
         post create_path(whatsapp_inbox), params: {}, headers: admin.create_new_auth_token, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
+      end
+
+      it 'returns unprocessable entity when template is not an object' do
+        post create_path(whatsapp_inbox), params: { template: 'x' }, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to eq('Template parameters are required')
+      end
+
+      it 'returns request_failed when Meta cannot be reached' do
+        stub_request(:post, templates_url).to_raise(Errno::ECONNREFUSED)
+
+        post create_path(whatsapp_inbox), params: template_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body).to include('error' => 'request_failed', 'error_type' => 'request_failed')
       end
     end
   end
