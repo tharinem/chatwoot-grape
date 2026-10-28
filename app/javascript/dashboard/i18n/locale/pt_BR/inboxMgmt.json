@@ -628,7 +628,8 @@
       "WIDGET_BUILDER": "Construtor de Widget",
       "BOT_CONFIGURATION": "Configuração do Bot",
       "ACCOUNT_HEALTH": "Saúde da conta",
-      "CSAT": "CSAT"
+      "CSAT": "CSAT",
+      "TEMPLATES": "Modelos"
     },
     "CHANNEL_PREFERENCES": "Preferências do Canal",
     "WIDGET_FEATURES": "Recursos do widget",

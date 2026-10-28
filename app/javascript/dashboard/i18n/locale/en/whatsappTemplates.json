@@ -42,6 +42,105 @@
       "MEDIA_URL_LABEL": "Enter {type} URL",
       "DOCUMENT_NAME_PLACEHOLDER": "Enter document filename (e.g., Invoice_2025.pdf)",
       "BUTTON_PARAMETER": "Enter button parameter"
+    },
+    "MANAGE": {
+      "TITLE": "Message templates",
+      "DESCRIPTION": "Create and review the WhatsApp templates of this inbox. Templates must be approved by Meta before they can be used in campaigns.",
+      "SEARCH_PLACEHOLDER": "Search by name or text",
+      "NEW_TEMPLATE": "New template",
+      "REFRESH": "Refresh from Meta",
+      "REFRESH_HINT": "Meta may take a few seconds to return new templates. Refresh again if a template does not show up yet.",
+      "REFRESH_ERROR": "Could not refresh the templates. Please try again.",
+      "EMPTY": "No templates yet. Create the first one or refresh from Meta.",
+      "NO_RESULTS": "No templates match your search.",
+      "PREVIEW_HINT": "Select a template to see the preview.",
+      "COLUMNS": {
+        "NAME": "Name",
+        "CATEGORY": "Category",
+        "STATUS": "Status",
+        "LANGUAGE": "Language",
+        "BODY": "Text"
+      },
+      "STATUS": {
+        "APPROVED": "Approved",
+        "PENDING": "Pending",
+        "REJECTED": "Rejected",
+        "PAUSED": "Paused",
+        "DISABLED": "Disabled",
+        "UNKNOWN": "Unknown"
+      },
+      "FORM": {
+        "TITLE": "New template",
+        "NAME": {
+          "LABEL": "Name",
+          "PLACEHOLDER": "e.g. order_shipped",
+          "HELP": "Only lowercase letters, numbers and underscore."
+        },
+        "CATEGORY": {
+          "LABEL": "Category",
+          "MARKETING": "Marketing",
+          "UTILITY": "Utility"
+        },
+        "LANGUAGE": {
+          "LABEL": "Language",
+          "HELP": "Language code, e.g. pt_BR or en_US."
+        },
+        "HEADER": {
+          "LABEL": "Header (optional)",
+          "PLACEHOLDER": "Short title, up to 60 characters",
+          "EXAMPLE": "Example for the header variable"
+        },
+        "BODY": {
+          "LABEL": "Text",
+          "PLACEHOLDER": "Hi {'{{'}1{'}}'}, your order {'{{'}2{'}}'} is on its way.",
+          "HELP": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... for variables, in order. The text cannot start or end with a variable."
+        },
+        "VARIABLE_EXAMPLE": "Example for {variable}",
+        "FOOTER": {
+          "LABEL": "Footer (optional)",
+          "PLACEHOLDER": "Short note, up to 60 characters, no variables"
+        },
+        "BUTTONS": {
+          "LABEL": "Buttons (optional)",
+          "NONE": "No buttons",
+          "QUICK_REPLY": "Quick replies (up to 3)",
+          "URL": "Link button (1)",
+          "TEXT": "Button text",
+          "URL_FIELD": "Link (https)",
+          "URL_EXAMPLE": "Example of the full link",
+          "ADD": "Add button",
+          "REMOVE": "Remove"
+        },
+        "PREVIEW": "Preview",
+        "SUBMIT": "Send to Meta for approval",
+        "CANCEL": "Cancel",
+        "SUCCESS": "Template sent to Meta. Status: {status}. Approval can take from minutes to 24 hours.",
+        "META_ERROR": "Meta rejected the template:",
+        "GENERIC_ERROR": "Could not create the template. Please try again.",
+        "FIX_ERRORS": "Please fix the highlighted fields."
+      },
+      "TIPS": {
+        "TITLE": "Before you send",
+        "CATEGORY": "Marketing or utility: Meta reviews the category and may reclassify the template.",
+        "COST": "Cost per send: marketing templates cost more than utility ones and are charged per delivered message.",
+        "APPROVAL": "Approval time: from a few minutes up to 24 hours.",
+        "PROMOTION": "Do not create promotional templates as utility. Meta may reject or reclassify them."
+      },
+      "ERRORS": {
+        "REQUIRED": "This field is required.",
+        "INVALID_FORMAT": "Invalid format.",
+        "INVALID_VALUE": "Invalid value.",
+        "TOO_LONG": "Too many characters.",
+        "NON_SEQUENTIAL_VARIABLES": "Variables must be sequential, starting at {'{{'}1{'}}'}, without skipping numbers.",
+        "VARIABLE_AT_EDGE": "The text cannot start or end with a variable.",
+        "MISSING_EXAMPLES": "Fill in an example for each variable.",
+        "TOO_MANY_VARIABLES": "The header accepts only one variable, {'{{'}1{'}}'}.",
+        "VARIABLES_NOT_ALLOWED": "Variables are not allowed here.",
+        "MIXED_TYPES": "Do not mix quick replies and link buttons.",
+        "INVALID_TYPE": "Unsupported button type.",
+        "TOO_MANY": "Too many buttons.",
+        "INVALID_URL": "Use a full https link. A variable is only allowed as {'{{'}1{'}}'} at the end."
+      }
     }
   }
 }

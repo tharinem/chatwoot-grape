@@ -42,6 +42,105 @@
       "MEDIA_URL_LABEL": "Digite a URL {type}",
       "DOCUMENT_NAME_PLACEHOLDER": "Informe o nome do arquivo do documento (ex.: Comprovante_2025.pdf)",
       "BUTTON_PARAMETER": "Insira o parâmetro do botão"
+    },
+    "MANAGE": {
+      "TITLE": "Modelos de mensagem",
+      "DESCRIPTION": "Crie e acompanhe os modelos de WhatsApp desta caixa de entrada. O modelo precisa ser aprovado pela Meta antes de ser usado em campanhas.",
+      "SEARCH_PLACEHOLDER": "Buscar por nome ou texto",
+      "NEW_TEMPLATE": "Novo modelo",
+      "REFRESH": "Atualizar da Meta",
+      "REFRESH_HINT": "A Meta pode levar alguns segundos para devolver os modelos novos. Atualize de novo se o modelo ainda não aparecer.",
+      "REFRESH_ERROR": "Não foi possível atualizar os modelos. Tente novamente.",
+      "EMPTY": "Nenhum modelo ainda. Crie o primeiro ou atualize da Meta.",
+      "NO_RESULTS": "Nenhum modelo encontrado para essa busca.",
+      "PREVIEW_HINT": "Selecione um modelo para ver a prévia.",
+      "COLUMNS": {
+        "NAME": "Nome",
+        "CATEGORY": "Categoria",
+        "STATUS": "Status",
+        "LANGUAGE": "Idioma",
+        "BODY": "Texto"
+      },
+      "STATUS": {
+        "APPROVED": "Aprovado",
+        "PENDING": "Pendente",
+        "REJECTED": "Rejeitado",
+        "PAUSED": "Pausado",
+        "DISABLED": "Desativado",
+        "UNKNOWN": "Desconhecido"
+      },
+      "FORM": {
+        "TITLE": "Novo modelo",
+        "NAME": {
+          "LABEL": "Nome",
+          "PLACEHOLDER": "ex.: pedido_enviado",
+          "HELP": "Só letras minúsculas, números e underline."
+        },
+        "CATEGORY": {
+          "LABEL": "Categoria",
+          "MARKETING": "Marketing",
+          "UTILITY": "Utilidade"
+        },
+        "LANGUAGE": {
+          "LABEL": "Idioma",
+          "HELP": "Código do idioma, ex.: pt_BR ou en_US."
+        },
+        "HEADER": {
+          "LABEL": "Cabeçalho (opcional)",
+          "PLACEHOLDER": "Título curto, até 60 caracteres",
+          "EXAMPLE": "Exemplo para a variável do cabeçalho"
+        },
+        "BODY": {
+          "LABEL": "Texto",
+          "PLACEHOLDER": "Oi {'{{'}1{'}}'}, seu pedido {'{{'}2{'}}'} saiu para entrega.",
+          "HELP": "Use {'{{'}1{'}}'}, {'{{'}2{'}}'}... para as variáveis, em ordem. O texto não pode começar nem terminar com variável."
+        },
+        "VARIABLE_EXAMPLE": "Exemplo para {variable}",
+        "FOOTER": {
+          "LABEL": "Rodapé (opcional)",
+          "PLACEHOLDER": "Nota curta, até 60 caracteres, sem variáveis"
+        },
+        "BUTTONS": {
+          "LABEL": "Botões (opcional)",
+          "NONE": "Sem botões",
+          "QUICK_REPLY": "Respostas rápidas (até 3)",
+          "URL": "Botão de link (1)",
+          "TEXT": "Texto do botão",
+          "URL_FIELD": "Link (https)",
+          "URL_EXAMPLE": "Exemplo do link completo",
+          "ADD": "Adicionar botão",
+          "REMOVE": "Remover"
+        },
+        "PREVIEW": "Prévia",
+        "SUBMIT": "Enviar para aprovação da Meta",
+        "CANCEL": "Cancelar",
+        "SUCCESS": "Modelo enviado para a Meta. Status: {status}. A aprovação leva de minutos a 24 horas.",
+        "META_ERROR": "A Meta recusou o modelo:",
+        "GENERIC_ERROR": "Não foi possível criar o modelo. Tente novamente.",
+        "FIX_ERRORS": "Corrija os campos destacados."
+      },
+      "TIPS": {
+        "TITLE": "Antes de enviar",
+        "CATEGORY": "Marketing ou utilidade: a Meta revisa a categoria e pode reclassificar o modelo.",
+        "COST": "Custo por envio: modelo de marketing custa mais que o de utilidade e é cobrado por mensagem entregue.",
+        "APPROVAL": "Prazo de aprovação: de alguns minutos até 24 horas.",
+        "PROMOTION": "Não crie modelo de promoção como utilidade. A Meta pode recusar ou reclassificar."
+      },
+      "ERRORS": {
+        "REQUIRED": "Campo obrigatório.",
+        "INVALID_FORMAT": "Formato inválido.",
+        "INVALID_VALUE": "Valor inválido.",
+        "TOO_LONG": "Passou do limite de caracteres.",
+        "NON_SEQUENTIAL_VARIABLES": "As variáveis precisam ser sequenciais, a partir de {'{{'}1{'}}'}, sem pular número.",
+        "VARIABLE_AT_EDGE": "O texto não pode começar nem terminar com variável.",
+        "MISSING_EXAMPLES": "Preencha um exemplo para cada variável.",
+        "TOO_MANY_VARIABLES": "O cabeçalho aceita só uma variável, {'{{'}1{'}}'}.",
+        "VARIABLES_NOT_ALLOWED": "Variáveis não são permitidas aqui.",
+        "MIXED_TYPES": "Não misture respostas rápidas com botão de link.",
+        "INVALID_TYPE": "Tipo de botão não suportado.",
+        "TOO_MANY": "Botões demais.",
+        "INVALID_URL": "Use um link https completo. Variável só como {'{{'}1{'}}'} no final."
+      }
     }
   }
 }
