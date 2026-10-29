@@ -35,6 +35,7 @@ import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAlert } from 'dashboard/composables';
 import { useChatListKeyboardEvents } from 'dashboard/composables/chatlist/useChatListKeyboardEvents';
 import { useBulkActions } from 'dashboard/composables/chatlist/useBulkActions';
+import { useTouchSelectionMode } from 'dashboard/composables/chatlist/useTouchSelectionMode';
 import { useFilter } from 'shared/composables/useFilter';
 import { useTrack } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -143,6 +144,9 @@ const {
   onAssignTeamsForBulk,
   onUpdateConversations,
 } = useBulkActions();
+
+const { isSelectionModeAvailable, isSelectionMode, toggleSelectionMode } =
+  useTouchSelectionMode({ onExit: () => resetBulkActions() });
 
 const {
   initializeStatusAndAssigneeFilterToModal,
@@ -838,6 +842,7 @@ provide('markAsUnread', markAsUnread);
 provide('markAsRead', markAsRead);
 provide('assignPriority', assignPriority);
 provide('isConversationSelected', isConversationSelected);
+provide('isSelectionMode', isSelectionMode);
 provide('deleteConversation', handleDelete);
 
 watch(activeTeam, () => resetAndFetchData());
@@ -890,11 +895,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       :is-on-expanded-layout="isOnExpandedLayout"
       :conversation-stats="conversationStats"
       :is-list-loading="chatListLoading && !conversationList.length"
+      :show-selection-toggle="isSelectionModeAvailable"
+      :is-selection-mode="isSelectionMode"
       @add-folders="onClickOpenAddFoldersModal"
       @delete-folders="onClickOpenDeleteFoldersModal"
       @filters-modal="onToggleAdvanceFiltersModal"
       @reset-filters="resetAndFetchData"
       @basic-filter-change="onBasicFilterChange"
+      @toggle-selection-mode="toggleSelectionMode"
     />
 
     <TeleportWithDirection

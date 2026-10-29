@@ -1,4 +1,5 @@
 <script>
+import { inject, ref } from 'vue';
 import ConversationCard from './widgets/conversation/ConversationCard.vue';
 export default {
   components: {
@@ -45,6 +46,11 @@ export default {
       default: false,
     },
   },
+  // Injected separately so the card keeps working where no list provides it.
+  setup() {
+    const isSelectionMode = inject('isSelectionMode', ref(false));
+    return { isSelectionMode };
+  },
 };
 </script>
 
@@ -57,6 +63,7 @@ export default {
     :conversation-type="conversationType"
     :selected="isConversationSelected(source.id)"
     :show-assignee="showAssignee"
+    :selection-mode="isSelectionMode"
     enable-context-menu
     @select-conversation="selectConversation"
     @de-select-conversation="deSelectConversation"
