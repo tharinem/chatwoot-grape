@@ -191,6 +191,9 @@ RSpec.describe 'Campaigns API', type: :request do
       end
 
       context 'with a scheduled whatsapp campaign' do
+        let(:whatsapp_inbox) do
+          create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', validate_provider_config: false, sync_templates: false).inbox
+        end
         let(:label) { create(:label, account: account) }
         let(:new_scheduled_at) { 3.days.from_now.change(usec: 0) }
         let(:edit_params) do
@@ -207,7 +210,7 @@ RSpec.describe 'Campaigns API', type: :request do
         end
 
         it 'updates title, template params, audience and scheduled time while not sent' do
-          whatsapp_campaign = create(:campaign, :whatsapp, account: account, scheduled_at: 1.day.from_now)
+          whatsapp_campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now)
 
           patch "/api/v1/accounts/#{account.id}/campaigns/#{whatsapp_campaign.display_id}",
                 params: edit_params,
@@ -223,7 +226,7 @@ RSpec.describe 'Campaigns API', type: :request do
         end
 
         it 'refuses to edit a campaign that was already sent' do
-          sent_campaign = create(:campaign, :whatsapp, account: account, scheduled_at: 1.day.ago)
+          sent_campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.ago)
           sent_campaign.completed!
 
           patch "/api/v1/accounts/#{account.id}/campaigns/#{sent_campaign.display_id}",
