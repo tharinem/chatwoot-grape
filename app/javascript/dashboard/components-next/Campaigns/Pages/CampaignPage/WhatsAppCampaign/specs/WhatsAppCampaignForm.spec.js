@@ -194,6 +194,97 @@ describe('WhatsAppCampaignForm', () => {
     });
   });
 
+  describe('scheduled time in the past', () => {
+    // TZ=UTC in the test script, so the input value is the UTC wall time.
+    const NOW = Date.UTC(2030, 0, 15, 12, 0);
+    const FUTURE_ERROR = 'Choose a date and time in the future.';
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    const setScheduledAt = async (wrapper, value) => {
+      await wrapper.find('input[type="datetime-local"]').setValue(value);
+    };
+
+    it('blocks saving an edit moved to a past date', async () => {
+      const wrapper = mountForm({ mode: 'edit', selectedCampaign: campaign });
+      await flushPromises();
+
+      await setScheduledAt(wrapper, '2030-01-13T08:10');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(wrapper.emitted('submit')).toBeUndefined();
+      expect(wrapper.text()).toContain(FUTURE_ERROR);
+      expect(await wrapper.vm.validate()).toBe(false);
+    });
+
+    it('shows the error right away when the saved time already passed', async () => {
+      const wrapper = mountForm({
+        mode: 'edit',
+        selectedCampaign: {
+          ...campaign,
+          scheduled_at: Date.UTC(2030, 0, 14, 9, 0) / 1000,
+        },
+      });
+      await flushPromises();
+
+      expect(wrapper.text()).toContain(FUTURE_ERROR);
+      expect(wrapper.vm.isSubmitDisabled).toBe(true);
+    });
+
+    it('refuses a time less than two minutes ahead', async () => {
+      const wrapper = mountForm({ mode: 'edit', selectedCampaign: campaign });
+      await flushPromises();
+
+      await setScheduledAt(wrapper, '2030-01-15T12:01');
+      expect(await wrapper.vm.validate()).toBe(false);
+
+      await setScheduledAt(wrapper, '2030-01-15T12:02');
+      expect(await wrapper.vm.validate()).toBe(true);
+    });
+
+    it('checks against the time of submit, not of opening', async () => {
+      const wrapper = mountForm({ mode: 'edit', selectedCampaign: campaign });
+      await flushPromises();
+
+      await setScheduledAt(wrapper, '2030-01-15T12:10');
+      expect(await wrapper.vm.validate()).toBe(true);
+
+      vi.setSystemTime(Date.UTC(2030, 0, 15, 12, 30));
+      expect(await wrapper.vm.validate()).toBe(false);
+    });
+
+    it('also applies in create mode', async () => {
+      const wrapper = mountForm({});
+      await flushPromises();
+
+      await setScheduledAt(wrapper, '2030-01-15T11:00');
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(wrapper.emitted('submit')).toBeUndefined();
+      expect(wrapper.text()).toContain(FUTURE_ERROR);
+    });
+
+    it('keeps the required message for an empty time', async () => {
+      const wrapper = mountForm({});
+      await flushPromises();
+
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Scheduled time is required');
+      expect(wrapper.text()).not.toContain(FUTURE_ERROR);
+    });
+  });
+
   describe('create mode', () => {
     it('starts empty and sends the inbox', async () => {
       const wrapper = mountForm({});

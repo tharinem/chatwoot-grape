@@ -150,6 +150,21 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(response_data[:scheduled_at]).to eq(scheduled_at.to_i)
         expect(response_data[:audience].pluck(:id)).to include(label1.id, label2.id)
       end
+
+      it 'refuses a oneoff campaign scheduled in the past' do
+        twilio_sms = create(:channel_twilio_sms, account: account)
+        twilio_inbox = create(:inbox, channel: twilio_sms, account: account)
+
+        expect do
+          post "/api/v1/accounts/#{account.id}/campaigns",
+               params: { inbox_id: twilio_inbox.id, title: 'test', message: 'test message', scheduled_at: 1.day.ago },
+               headers: administrator.create_new_auth_token,
+               as: :json
+        end.not_to change(Campaign, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['message']).to include('Scheduled at must be in the future')
+      end
     end
   end
 
@@ -226,7 +241,7 @@ RSpec.describe 'Campaigns API', type: :request do
         end
 
         it 'refuses to edit a campaign that was already sent' do
-          sent_campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.ago)
+          sent_campaign = travel_to(2.days.ago) { create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now) }
           sent_campaign.completed!
 
           patch "/api/v1/accounts/#{account.id}/campaigns/#{sent_campaign.display_id}",
@@ -237,6 +252,22 @@ RSpec.describe 'Campaigns API', type: :request do
           expect(response).to have_http_status(:unprocessable_entity)
           expect(response.parsed_body['message']).to include('already completed')
           expect(sent_campaign.reload.title).not_to eq('Promo editada')
+        end
+
+        it 'refuses to move the scheduled time to the past' do
+          whatsapp_campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now)
+
+          patch "/api/v1/accounts/#{account.id}/campaigns/#{whatsapp_campaign.display_id}",
+                params: edit_params.merge(scheduled_at: 1.day.ago),
+                headers: administrator.create_new_auth_token,
+                as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['message']).to include('Scheduled at must be in the future')
+          whatsapp_campaign.reload
+          expect(whatsapp_campaign.title).not_to eq('Promo editada')
+          expect(whatsapp_campaign.scheduled_at).to be > Time.current
+          expect(whatsapp_campaign).to be_active
         end
       end
     end

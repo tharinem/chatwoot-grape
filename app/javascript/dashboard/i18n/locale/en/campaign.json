@@ -189,7 +189,8 @@
           "SCHEDULED_AT": {
             "LABEL": "Scheduled time",
             "PLACEHOLDER": "Please select the time",
-            "ERROR": "Scheduled time is required"
+            "ERROR": "Scheduled time is required",
+            "FUTURE_ERROR": "Choose a date and time in the future."
           },
           "BUTTONS": {
             "CREATE": "Create",

@@ -38,6 +38,7 @@ class Campaign < ApplicationRecord
   validate :validate_campaign_inbox
   validate :validate_url
   validate :prevent_completed_campaign_from_update, on: :update
+  validate :scheduled_at_must_not_be_in_the_past, if: :validate_scheduled_at?
   validate :sender_must_belong_to_account
   validate :inbox_must_belong_to_account
 
@@ -50,6 +51,11 @@ class Campaign < ApplicationRecord
   enum campaign_status: { active: 0, completed: 1 }
 
   has_many :conversations, dependent: :nullify, autosave: true
+
+  # Tolerance for a one_off campaign without scheduled_at (defaults to now in
+  # ensure_correct_campaign_attributes) and for small clock differences
+  # between the browser and the server.
+  SCHEDULED_AT_PAST_TOLERANCE = 1.minute
 
   before_validation :ensure_correct_campaign_attributes
   after_commit :set_display_id, unless: :display_id?
@@ -118,6 +124,18 @@ class Campaign < ApplicationRecord
     return if account.users.exists?(id: sender.id)
 
     errors.add(:sender_id, 'must belong to the same account as the campaign')
+  end
+
+  def validate_scheduled_at?
+    one_off? && scheduled_at.present? && will_save_change_to_scheduled_at?
+  end
+
+  # A one_off campaign scheduled in the past is picked up by
+  # TriggerScheduledItemsJob right away and can't run again after that.
+  def scheduled_at_must_not_be_in_the_past
+    return if scheduled_at >= SCHEDULED_AT_PAST_TOLERANCE.ago
+
+    errors.add :scheduled_at, 'must be in the future'
   end
 
   def prevent_completed_campaign_from_update

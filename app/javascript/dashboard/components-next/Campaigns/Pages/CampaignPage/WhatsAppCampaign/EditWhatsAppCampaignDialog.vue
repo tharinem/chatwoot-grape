@@ -48,7 +48,7 @@ const handleSubmit = async () => {
   const form = whatsAppCampaignFormRef.value;
   if (!form) return;
 
-  const isFormValid = await form.v$.$validate();
+  const isFormValid = await form.validate();
   if (!isFormValid) return;
 
   await updateCampaign(form.prepareCampaignDetails());

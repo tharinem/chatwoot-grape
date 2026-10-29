@@ -10,6 +10,13 @@ import Button from 'dashboard/components-next/button/Button.vue';
 import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
+import {
+  MIN_SCHEDULE_LEAD_MINUTES,
+  currentLocalDateTimeInput,
+  formatToUTCString,
+  isAtLeastMinutesAhead,
+  toLocalDateTimeInput,
+} from './scheduledAtHelper';
 
 const props = defineProps({
   mode: {
@@ -52,15 +59,6 @@ const isEditMode = computed(
   () => props.mode === 'edit' && !!props.selectedCampaign
 );
 
-// scheduled_at comes from the API as a unix timestamp (seconds); the
-// datetime-local input expects local time as YYYY-MM-DDTHH:mm.
-const toLocalDateTimeInput = timestamp => {
-  if (!timestamp) return null;
-  const date = new Date(timestamp * 1000);
-  const localTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localTime.toISOString().slice(0, 16);
-};
-
 const findTemplateId = (inboxId, templateParams) => {
   if (!inboxId || !templateParams?.name) return null;
   const templates = formState.getFilteredWhatsAppTemplates.value(inboxId) || [];
@@ -93,15 +91,29 @@ const state = reactive(
 );
 const templateParserRef = ref(null);
 
+// Reference time for the "in the future" rule. Refreshed before each
+// validation so a form left open for a while is not checked against the
+// moment it was opened.
+const now = ref(Date.now());
+
+// The input's min attribute is not enforced on a JS submit, so the rule
+// keeps a past date from reaching the API (the scheduler would send it
+// right away and mark the campaign as completed).
+const isInFuture = value =>
+  !value || isAtLeastMinutesAhead(value, MIN_SCHEDULE_LEAD_MINUTES, now.value);
+
 const rules = {
   title: { required, minLength: minLength(1) },
   inboxId: { required },
   templateId: { required },
-  scheduledAt: { required },
+  scheduledAt: { required, isInFuture },
   selectedAudience: { required },
 };
 
 const v$ = useVuelidate(rules, state);
+
+// A saved time that is already too close or past shows its error right away.
+if (isEditMode.value) v$.value.scheduledAt.$touch();
 
 const isCreating = computed(() => formState.uiFlags.value.isCreating);
 const isUpdating = computed(() => formState.uiFlags.value.isUpdating);
@@ -115,12 +127,8 @@ const submitButtonLabel = computed(() =>
     : t('CAMPAIGN.WHATSAPP.CREATE.FORM.BUTTONS.CREATE')
 );
 
-const currentDateTime = computed(() => {
-  // Added to disable the scheduled at field from being set to the current time
-  const now = new Date();
-  const localTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-  return localTime.toISOString().slice(0, 16);
-});
+// Added to disable the scheduled at field from being set to the current time
+const currentDateTime = computed(() => currentLocalDateTimeInput(now.value));
 
 const mapToOptions = (items, valueKey, labelKey) =>
   items?.map(item => ({
@@ -173,11 +181,19 @@ const getErrorMessage = (field, errorKey) => {
   return v$.value[field].$error ? t(`${baseKey}.${errorKey}.ERROR`) : '';
 };
 
+const scheduledAtError = computed(() => {
+  const field = v$.value.scheduledAt;
+  if (!field.$error) return '';
+  return field.required.$invalid
+    ? t('CAMPAIGN.WHATSAPP.CREATE.FORM.SCHEDULED_AT.ERROR')
+    : t('CAMPAIGN.WHATSAPP.CREATE.FORM.SCHEDULED_AT.FUTURE_ERROR');
+});
+
 const formErrors = computed(() => ({
   title: getErrorMessage('title', 'TITLE'),
   inbox: getErrorMessage('inboxId', 'INBOX'),
   template: getErrorMessage('templateId', 'TEMPLATE'),
-  scheduledAt: getErrorMessage('scheduledAt', 'SCHEDULED_AT'),
+  scheduledAt: scheduledAtError.value,
   audience: getErrorMessage('selectedAudience', 'AUDIENCE'),
 }));
 
@@ -188,9 +204,6 @@ const hasRequiredTemplateParams = computed(() => {
 const isSubmitDisabled = computed(
   () => v$.value.$invalid || !hasRequiredTemplateParams.value
 );
-
-const formatToUTCString = localDateTime =>
-  localDateTime ? new Date(localDateTime).toISOString() : null;
 
 const resetState = () => {
   Object.assign(state, initialState);
@@ -233,8 +246,13 @@ const prepareCampaignDetails = () => {
   return details;
 };
 
+const validate = () => {
+  now.value = Date.now();
+  return v$.value.$validate();
+};
+
 const handleSubmit = async () => {
-  const isFormValid = await v$.value.$validate();
+  const isFormValid = await validate();
   if (!isFormValid) return;
 
   emit('submit', prepareCampaignDetails());
@@ -253,7 +271,7 @@ watch(
   }
 );
 
-defineExpose({ prepareCampaignDetails, isSubmitDisabled, v$ });
+defineExpose({ prepareCampaignDetails, isSubmitDisabled, v$, validate });
 </script>
 
 <template>
