@@ -11,6 +11,22 @@ import ComboBox from 'dashboard/components-next/combobox/ComboBox.vue';
 import TagMultiSelectComboBox from 'dashboard/components-next/combobox/TagMultiSelectComboBox.vue';
 import WhatsAppTemplateParser from 'dashboard/components-next/whatsapp/WhatsAppTemplateParser.vue';
 
+const props = defineProps({
+  mode: {
+    type: String,
+    default: 'create',
+    validator: value => ['edit', 'create'].includes(value),
+  },
+  selectedCampaign: {
+    type: Object,
+    default: null,
+  },
+  showActionButtons: {
+    type: Boolean,
+    default: true,
+  },
+});
+
 const emit = defineEmits(['submit', 'cancel']);
 
 const { t } = useI18n();
@@ -32,7 +48,49 @@ const initialState = {
   selectedAudience: [],
 };
 
-const state = reactive({ ...initialState });
+const isEditMode = computed(
+  () => props.mode === 'edit' && !!props.selectedCampaign
+);
+
+// scheduled_at comes from the API as a unix timestamp (seconds); the
+// datetime-local input expects local time as YYYY-MM-DDTHH:mm.
+const toLocalDateTimeInput = timestamp => {
+  if (!timestamp) return null;
+  const date = new Date(timestamp * 1000);
+  const localTime = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localTime.toISOString().slice(0, 16);
+};
+
+const findTemplateId = (inboxId, templateParams) => {
+  if (!inboxId || !templateParams?.name) return null;
+  const templates = formState.getFilteredWhatsAppTemplates.value(inboxId) || [];
+  const match = templates.find(
+    template =>
+      template.name === templateParams.name &&
+      (!templateParams.language ||
+        template.language === templateParams.language)
+  );
+  return match?.id ?? null;
+};
+
+const buildStateFromCampaign = campaign => {
+  const inboxId = campaign.inbox?.id ?? null;
+  return {
+    title: campaign.title || '',
+    inboxId,
+    templateId: findTemplateId(inboxId, campaign.template_params),
+    scheduledAt: toLocalDateTimeInput(campaign.scheduled_at),
+    selectedAudience: (campaign.audience || [])
+      .filter(item => item.type === 'Label')
+      .map(item => item.id),
+  };
+};
+
+const state = reactive(
+  isEditMode.value
+    ? buildStateFromCampaign(props.selectedCampaign)
+    : { ...initialState }
+);
 const templateParserRef = ref(null);
 
 const rules = {
@@ -46,6 +104,16 @@ const rules = {
 const v$ = useVuelidate(rules, state);
 
 const isCreating = computed(() => formState.uiFlags.value.isCreating);
+const isUpdating = computed(() => formState.uiFlags.value.isUpdating);
+const isSubmitting = computed(() =>
+  isEditMode.value ? isUpdating.value : isCreating.value
+);
+
+const submitButtonLabel = computed(() =>
+  isEditMode.value
+    ? t('CAMPAIGN.WHATSAPP.EDIT.FORM.BUTTONS.SAVE')
+    : t('CAMPAIGN.WHATSAPP.CREATE.FORM.BUTTONS.CREATE')
+);
 
 const currentDateTime = computed(() => {
   // Added to disable the scheduled at field from being set to the current time
@@ -89,6 +157,15 @@ const selectedTemplate = computed(() => {
   if (!state.templateId) return null;
   return templateOptions.value.find(option => option.value === state.templateId)
     ?.template;
+});
+
+// Prefill the template variables only while the campaign's own template is
+// selected; picking another template starts from empty values.
+const templateInitialParams = computed(() => {
+  if (!isEditMode.value || !selectedTemplate.value) return null;
+  const savedParams = props.selectedCampaign.template_params;
+  if (savedParams?.name !== selectedTemplate.value.name) return null;
+  return savedParams?.processed_params || null;
 });
 
 const getErrorMessage = (field, errorKey) => {
@@ -139,17 +216,21 @@ const prepareCampaignDetails = () => {
     processed_params: parserData?.processedParams || {},
   };
 
-  return {
+  const details = {
     title: state.title,
     message: templateContent,
     template_params: templateParams,
-    inbox_id: state.inboxId,
     scheduled_at: formatToUTCString(state.scheduledAt),
     audience: state.selectedAudience?.map(id => ({
       id,
       type: 'Label',
     })),
   };
+
+  // The inbox is fixed once the campaign exists.
+  if (!isEditMode.value) details.inbox_id = state.inboxId;
+
+  return details;
 };
 
 const handleSubmit = async () => {
@@ -157,6 +238,8 @@ const handleSubmit = async () => {
   if (!isFormValid) return;
 
   emit('submit', prepareCampaignDetails());
+  if (isEditMode.value) return;
+
   resetState();
   handleCancel();
 };
@@ -165,9 +248,12 @@ const handleSubmit = async () => {
 watch(
   () => state.inboxId,
   () => {
+    if (isEditMode.value) return;
     state.templateId = null;
   }
 );
+
+defineExpose({ prepareCampaignDetails, isSubmitDisabled, v$ });
 </script>
 
 <template>
@@ -191,6 +277,7 @@ watch(
         :has-error="!!formErrors.inbox"
         :placeholder="t('CAMPAIGN.WHATSAPP.CREATE.FORM.INBOX.PLACEHOLDER')"
         :message="formErrors.inbox"
+        :disabled="isEditMode"
         class="[&>div>button]:bg-n-alpha-black2 [&>div>button:not(.focused)]:dark:outline-n-weak [&>div>button:not(.focused)]:hover:!outline-n-slate-6"
       />
     </div>
@@ -218,6 +305,7 @@ watch(
       v-if="selectedTemplate"
       ref="templateParserRef"
       :template="selectedTemplate"
+      :initial-params="templateInitialParams"
     />
 
     <div class="flex flex-col gap-1">
@@ -245,7 +333,10 @@ watch(
       :message-type="formErrors.scheduledAt ? 'error' : 'info'"
     />
 
-    <div class="flex gap-3 justify-between items-center w-full">
+    <div
+      v-if="showActionButtons"
+      class="flex gap-3 justify-between items-center w-full"
+    >
       <Button
         variant="faded"
         color="slate"
@@ -255,11 +346,11 @@ watch(
         @click="handleCancel"
       />
       <Button
-        :label="t('CAMPAIGN.WHATSAPP.CREATE.FORM.BUTTONS.CREATE')"
+        :label="submitButtonLabel"
         class="w-full"
         type="submit"
-        :is-loading="isCreating"
-        :disabled="isCreating || isSubmitDisabled"
+        :is-loading="isSubmitting"
+        :disabled="isSubmitting || isSubmitDisabled"
       />
     </div>
   </form>

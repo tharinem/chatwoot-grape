@@ -152,7 +152,8 @@
         "CAMPAIGN_DETAILS": {
           "SENT_FROM": "Enviado de",
           "ON": "ativado"
-        }
+        },
+        "EDIT": "Editar"
       },
       "CREATE": {
         "TITLE": "Criar campanha do WhatsApp",
@@ -197,6 +198,18 @@
           "API": {
             "SUCCESS_MESSAGE": "Campanha do WhatsApp criada com sucesso",
             "ERROR_MESSAGE": "Houve um erro. Por favor, tente novamente."
+          }
+        }
+      },
+      "EDIT": {
+        "TITLE": "Editar campanha do WhatsApp",
+        "FORM": {
+          "BUTTONS": {
+            "SAVE": "Salvar alterações"
+          },
+          "API": {
+            "SUCCESS_MESSAGE": "Campanha do WhatsApp atualizada com sucesso",
+            "ERROR_MESSAGE": "Não foi possível atualizar a campanha. Ela pode já ter sido enviada."
           }
         }
       }
