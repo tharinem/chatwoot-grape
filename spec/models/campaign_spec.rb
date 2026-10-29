@@ -118,6 +118,50 @@ RSpec.describe Campaign do
     end
   end
 
+  context 'when validating scheduled_at of a one_off campaign' do
+    let(:account) { create(:account) }
+    let(:twilio_sms) { create(:channel_twilio_sms, account: account) }
+    let(:twilio_inbox) { create(:inbox, channel: twilio_sms, account: account) }
+
+    it 'refuses a scheduled_at in the past on create' do
+      campaign = build(:campaign, account: account, inbox: twilio_inbox, scheduled_at: 1.day.ago)
+      expect(campaign).not_to be_valid
+      expect(campaign.errors[:scheduled_at]).to include('must be in the future')
+    end
+
+    it 'accepts a scheduled_at in the future' do
+      campaign = build(:campaign, account: account, inbox: twilio_inbox, scheduled_at: 1.hour.from_now)
+      expect(campaign).to be_valid
+    end
+
+    it 'accepts a campaign without scheduled_at, which defaults to now' do
+      campaign = build(:campaign, account: account, inbox: twilio_inbox)
+      expect(campaign.save).to be true
+      expect(campaign.scheduled_at).to be_present
+    end
+
+    it 'refuses moving scheduled_at to the past on update' do
+      campaign = create(:campaign, account: account, inbox: twilio_inbox, scheduled_at: 2.days.from_now)
+      expect(campaign.update(scheduled_at: 2.days.ago)).to be false
+      expect(campaign.errors.full_messages).to include('Scheduled at must be in the future')
+      expect(campaign.reload.scheduled_at).to be > Time.current
+    end
+
+    it 'allows other updates when scheduled_at did not change' do
+      campaign = travel_to(2.days.ago) { create(:campaign, account: account, inbox: twilio_inbox, scheduled_at: 1.day.from_now) }
+      expect(campaign.scheduled_at).to be < Time.current
+      expect(campaign.update(title: 'novo titulo')).to be true
+    end
+
+    it 'does not apply to ongoing campaigns' do
+      web_widget = create(:channel_widget, account: account)
+      campaign = build(:campaign, account: account, inbox: web_widget.inbox, scheduled_at: 1.day.ago,
+                                  trigger_rules: { url: 'https://test.com' })
+      expect(campaign).to be_valid
+      expect(campaign.scheduled_at).to be_nil
+    end
+  end
+
   context 'when validating sender' do
     let(:account) { create(:account) }
     let(:user) { create(:user, account: account) }

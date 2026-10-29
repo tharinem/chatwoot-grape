@@ -189,7 +189,8 @@
           "SCHEDULED_AT": {
             "LABEL": "Horário agendado",
             "PLACEHOLDER": "Por favor insira a hora",
-            "ERROR": "Horário agendado é necessário"
+            "ERROR": "Horário agendado é necessário",
+            "FUTURE_ERROR": "Escolha uma data e hora no futuro."
           },
           "BUTTONS": {
             "CREATE": "Criar",
