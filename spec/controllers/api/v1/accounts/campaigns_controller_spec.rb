@@ -189,6 +189,53 @@ RSpec.describe 'Campaigns API', type: :request do
         expect(response).to have_http_status(:success)
         expect(JSON.parse(response.body, symbolize_names: true)[:title]).to eq('test')
       end
+
+      context 'with a scheduled whatsapp campaign' do
+        let(:label) { create(:label, account: account) }
+        let(:new_scheduled_at) { 3.days.from_now.change(usec: 0) }
+        let(:edit_params) do
+          {
+            title: 'Promo editada',
+            message: 'Oi Ana, cupom CAFE20',
+            scheduled_at: new_scheduled_at,
+            audience: [{ type: 'Label', id: label.id }],
+            template_params: {
+              name: 'ticket_status_updated', namespace: 'ns', category: 'UTILITY', language: 'en',
+              processed_params: { body: { '1' => 'Ana', '2' => 'CAFE20' } }
+            }
+          }
+        end
+
+        it 'updates title, template params, audience and scheduled time while not sent' do
+          whatsapp_campaign = create(:campaign, :whatsapp, account: account, scheduled_at: 1.day.from_now)
+
+          patch "/api/v1/accounts/#{account.id}/campaigns/#{whatsapp_campaign.display_id}",
+                params: edit_params,
+                headers: administrator.create_new_auth_token,
+                as: :json
+
+          expect(response).to have_http_status(:success)
+          whatsapp_campaign.reload
+          expect(whatsapp_campaign.title).to eq('Promo editada')
+          expect(whatsapp_campaign.scheduled_at.to_i).to eq(new_scheduled_at.to_i)
+          expect(whatsapp_campaign.audience).to eq([{ 'type' => 'Label', 'id' => label.id }])
+          expect(whatsapp_campaign.template_params['processed_params']).to eq('body' => { '1' => 'Ana', '2' => 'CAFE20' })
+        end
+
+        it 'refuses to edit a campaign that was already sent' do
+          sent_campaign = create(:campaign, :whatsapp, account: account, scheduled_at: 1.day.ago)
+          sent_campaign.completed!
+
+          patch "/api/v1/accounts/#{account.id}/campaigns/#{sent_campaign.display_id}",
+                params: edit_params,
+                headers: administrator.create_new_auth_token,
+                as: :json
+
+          expect(response).to have_http_status(:unprocessable_entity)
+          expect(response.parsed_body['message']).to include('already completed')
+          expect(sent_campaign.reload.title).not_to eq('Promo editada')
+        end
+      end
     end
   end
 

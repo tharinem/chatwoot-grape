@@ -8,6 +8,7 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
 import CampaignList from 'dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue';
 import WhatsAppCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/WhatsAppCampaign/WhatsAppCampaignDialog.vue';
+import EditWhatsAppCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/WhatsAppCampaign/EditWhatsAppCampaignDialog.vue';
 import ConfirmDeleteCampaignDialog from 'dashboard/components-next/Campaigns/Pages/CampaignPage/ConfirmDeleteCampaignDialog.vue';
 import WhatsAppCampaignEmptyState from 'dashboard/components-next/Campaigns/EmptyState/WhatsAppCampaignEmptyState.vue';
 
@@ -21,6 +22,7 @@ const uiFlags = useMapGetter('campaigns/getUIFlags');
 const isFetchingCampaigns = computed(() => uiFlags.value.isFetching);
 
 const confirmDeleteCampaignDialogRef = ref(null);
+const editWhatsAppCampaignDialogRef = ref(null);
 
 const WhatsAppCampaigns = computed(
   () => getters['campaigns/getWhatsAppCampaigns'].value
@@ -29,6 +31,11 @@ const WhatsAppCampaigns = computed(
 const hasNoWhatsAppCampaigns = computed(
   () => WhatsAppCampaigns.value?.length === 0 && !isFetchingCampaigns.value
 );
+
+const handleEdit = campaign => {
+  selectedCampaign.value = campaign;
+  editWhatsAppCampaignDialogRef.value.dialogRef.open();
+};
 
 const handleDelete = campaign => {
   selectedCampaign.value = campaign;
@@ -58,6 +65,8 @@ const handleDelete = campaign => {
     <CampaignList
       v-else-if="!hasNoWhatsAppCampaigns"
       :campaigns="WhatsAppCampaigns"
+      is-editable
+      @edit="handleEdit"
       @delete="handleDelete"
     />
     <WhatsAppCampaignEmptyState
@@ -65,6 +74,10 @@ const handleDelete = campaign => {
       :title="t('CAMPAIGN.WHATSAPP.EMPTY_STATE.TITLE')"
       :subtitle="t('CAMPAIGN.WHATSAPP.EMPTY_STATE.SUBTITLE')"
       class="pt-14"
+    />
+    <EditWhatsAppCampaignDialog
+      ref="editWhatsAppCampaignDialogRef"
+      :selected-campaign="selectedCampaign"
     />
     <ConfirmDeleteCampaignDialog
       ref="confirmDeleteCampaignDialogRef"

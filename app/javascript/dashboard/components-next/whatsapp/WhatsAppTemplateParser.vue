@@ -35,6 +35,12 @@ const props = defineProps({
       return true;
     },
   },
+  // Optional processed_params from a saved record (e.g. a campaign being
+  // edited). Values are copied only into keys the template still defines.
+  initialParams: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['sendMessage', 'resetTemplate', 'back']);
@@ -118,10 +124,37 @@ const v$ = useVuelidate(
   { processedParams }
 );
 
+const applyInitialParams = (params, initial) => {
+  if (!initial) return params;
+
+  if (params.body && initial.body) {
+    Object.keys(params.body).forEach(key => {
+      if (initial.body[key] != null) params.body[key] = initial.body[key];
+    });
+  }
+
+  if (params.header && initial.header) {
+    ['media_url', 'media_name'].forEach(key => {
+      if (key in params.header && initial.header[key] != null) {
+        params.header[key] = initial.header[key];
+      }
+    });
+  }
+
+  if (params.buttons && Array.isArray(initial.buttons)) {
+    params.buttons.forEach((button, index) => {
+      const parameter = initial.buttons[index]?.parameter;
+      if (button && parameter != null) button.parameter = parameter;
+    });
+  }
+
+  return params;
+};
+
 const initializeTemplateParameters = () => {
-  processedParams.value = buildTemplateParameters(
-    props.template,
-    hasMediaHeader.value
+  processedParams.value = applyInitialParams(
+    buildTemplateParameters(props.template, hasMediaHeader.value),
+    props.initialParams
   );
 };
 

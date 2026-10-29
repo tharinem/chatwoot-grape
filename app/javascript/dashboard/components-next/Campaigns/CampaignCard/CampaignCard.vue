@@ -22,6 +22,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // One-off campaigns (e.g. WhatsApp) can be edited until they are sent.
+  isEditable: {
+    type: Boolean,
+    default: false,
+  },
   isEnabled: {
     type: Boolean,
     default: false,
@@ -55,6 +60,11 @@ const { formatMessage } = useMessageFormatter();
 const isActive = computed(() =>
   props.isLiveChatType ? props.isEnabled : props.status !== STATUS_COMPLETED
 );
+
+const showEditButton = computed(() => {
+  if (props.isLiveChatType) return true;
+  return props.isEditable && props.status !== STATUS_COMPLETED;
+});
 
 const statusTextColor = computed(() => ({
   'text-n-teal-11': isActive.value,
@@ -118,11 +128,14 @@ const inboxIcon = computed(() => {
     </div>
     <div class="flex items-center justify-end w-20 gap-2">
       <Button
-        v-if="isLiveChatType"
+        v-if="showEditButton"
+        v-tooltip.top="isLiveChatType ? null : t('CAMPAIGN.WHATSAPP.CARD.EDIT')"
         variant="faded"
         size="sm"
         color="slate"
         icon="i-lucide-sliders-vertical"
+        :aria-label="isLiveChatType ? null : t('CAMPAIGN.WHATSAPP.CARD.EDIT')"
+        data-test-id="campaign-edit-button"
         @click="emit('edit')"
       />
       <Button
