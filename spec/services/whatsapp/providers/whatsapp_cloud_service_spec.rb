@@ -192,6 +192,87 @@ describe Whatsapp::Providers::WhatsappCloudService do
     end
   end
 
+  describe 'messaging_account_id' do
+    let(:messages_url) { 'https://graph.facebook.com/v13.0/123456789/messages' }
+    let(:template_info) { { name: 'test_template', lang_code: 'en_US', parameters: [] } }
+
+    def sent_body
+      body = nil
+      expect(WebMock).to(have_requested(:post, messages_url).with { |req| body = JSON.parse(req.body) })
+      body
+    end
+
+    context 'when messaging_account_id is configured' do
+      let(:whatsapp_channel) do
+        create(:channel_whatsapp, provider: 'whatsapp_cloud', provider_config: { 'messaging_account_id' => '998877665544' },
+                                  validate_provider_config: false, sync_templates: false)
+      end
+
+      before do
+        stub_request(:post, messages_url).to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+      end
+
+      it 'includes it in text messages' do
+        expect(service.send_message('+123456789', message)).to eq 'message_id'
+        expect(sent_body).to include('messaging_account_id' => '998877665544', 'type' => 'text')
+      end
+
+      it 'includes it in attachment messages' do
+        attachment = message.attachments.new(account_id: message.account_id, file_type: :image)
+        attachment.file.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
+
+        expect(service.send_message('+123456789', message)).to eq 'message_id'
+        expect(sent_body).to include('messaging_account_id' => '998877665544', 'type' => 'image')
+      end
+
+      it 'includes it in interactive messages' do
+        interactive = create(:message, message_type: :outgoing, content: 'test', inbox: whatsapp_channel.inbox,
+                                       content_type: 'input_select',
+                                       content_attributes: { items: [{ title: 'Pasta', value: 'Pasta' }] })
+
+        expect(service.send_message('+123456789', interactive)).to eq 'message_id'
+        expect(sent_body).to include('messaging_account_id' => '998877665544', 'type' => 'interactive')
+      end
+
+      it 'includes it in template messages' do
+        expect(service.send_template('+123456789', template_info, message)).to eq 'message_id'
+        expect(sent_body).to include('messaging_account_id' => '998877665544', 'type' => 'template')
+      end
+    end
+
+    context 'when messaging_account_id is not configured' do
+      before do
+        stub_request(:post, messages_url).to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+      end
+
+      it 'omits it from text messages' do
+        expect(service.send_message('+123456789', message)).to eq 'message_id'
+        expect(sent_body).not_to have_key('messaging_account_id')
+      end
+
+      it 'omits it from template messages' do
+        expect(service.send_template('+123456789', template_info, message)).to eq 'message_id'
+        expect(sent_body).not_to have_key('messaging_account_id')
+      end
+    end
+
+    context 'when messaging_account_id is blank' do
+      let(:whatsapp_channel) do
+        create(:channel_whatsapp, provider: 'whatsapp_cloud', provider_config: { 'messaging_account_id' => '' },
+                                  validate_provider_config: false, sync_templates: false)
+      end
+
+      before do
+        stub_request(:post, messages_url).to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+      end
+
+      it 'omits it from the request body' do
+        expect(service.send_message('+123456789', message)).to eq 'message_id'
+        expect(sent_body).not_to have_key('messaging_account_id')
+      end
+    end
+  end
+
   describe '#sync_templates' do
     context 'when called' do
       it 'updated the message templates' do

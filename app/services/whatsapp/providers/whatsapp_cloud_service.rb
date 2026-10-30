@@ -25,7 +25,7 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
-      body: request_body.to_json
+      body: with_messaging_account(request_body).to_json
     )
 
     process_response(response, message)
@@ -94,21 +94,33 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
     "#{api_base_path}/v13.0/#{whatsapp_channel.provider_config['phone_number_id']}"
   end
 
+  # Meta's account model: when the access token reaches more than one Messaging
+  # account on the same phone number, every send must say which one pays.
+  # https://developers.facebook.com/documentation/business-messaging/whatsapp/account-model-evolution/messaging/
+  def with_messaging_account(body)
+    messaging_account_id = whatsapp_channel.provider_config['messaging_account_id']
+    return body if messaging_account_id.blank?
+
+    body.merge(messaging_account_id: messaging_account_id.to_s)
+  end
+
   def business_account_path
     "#{api_base_path}/v14.0/#{whatsapp_channel.provider_config['business_account_id']}"
   end
 
   def send_text_message(phone_number, message)
+    request_body = {
+      messaging_product: 'whatsapp',
+      context: whatsapp_reply_context(message),
+      to: phone_number,
+      text: { body: message.outgoing_content },
+      type: 'text'
+    }
+
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
-      body: {
-        messaging_product: 'whatsapp',
-        context: whatsapp_reply_context(message),
-        to: phone_number,
-        text: { body: message.outgoing_content },
-        type: 'text'
-      }.to_json
+      body: with_messaging_account(request_body).to_json
     )
 
     process_response(response, message)
@@ -125,16 +137,20 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
-      body: {
-        :messaging_product => 'whatsapp',
-        :context => whatsapp_reply_context(message),
-        'to' => phone_number,
-        'type' => type,
-        type.to_s => type_content
-      }.to_json
+      body: with_messaging_account(attachment_request_body(phone_number, message, type, type_content)).to_json
     )
 
     process_response(response, message)
+  end
+
+  def attachment_request_body(phone_number, message, type, type_content)
+    {
+      :messaging_product => 'whatsapp',
+      :context => whatsapp_reply_context(message),
+      'to' => phone_number,
+      'type' => type,
+      type.to_s => type_content
+    }
   end
 
   def error_message(response)
@@ -191,15 +207,17 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
   def send_interactive_text_message(phone_number, message)
     payload = create_payload_based_on_items(message)
 
+    request_body = {
+      messaging_product: 'whatsapp',
+      to: phone_number,
+      interactive: payload,
+      type: 'interactive'
+    }
+
     response = HTTParty.post(
       "#{phone_id_path}/messages",
       headers: api_headers,
-      body: {
-        messaging_product: 'whatsapp',
-        to: phone_number,
-        interactive: payload,
-        type: 'interactive'
-      }.to_json
+      body: with_messaging_account(request_body).to_json
     )
 
     process_response(response, message)
