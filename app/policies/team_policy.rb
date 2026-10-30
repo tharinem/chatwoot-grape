@@ -11,6 +11,10 @@ class TeamPolicy < ApplicationPolicy
     true
   end
 
+  def queue_counts?
+    true
+  end
+
   def create?
     @account_user.administrator?
   end

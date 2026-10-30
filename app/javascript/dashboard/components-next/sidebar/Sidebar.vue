@@ -19,6 +19,8 @@ import SidebarProfileMenu from './SidebarProfileMenu.vue';
 import SidebarChangelogCard from './SidebarChangelogCard.vue';
 import SidebarChangelogButton from './SidebarChangelogButton.vue';
 import ChannelLeaf from './ChannelLeaf.vue';
+import TeamLeaf from './TeamLeaf.vue';
+import { useTeamQueueCounts } from './useTeamQueueCounts';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
 import Logo from 'next/icon/Logo.vue';
@@ -160,6 +162,7 @@ useEventListener(document, 'touchend', onResizeEnd);
 const inboxes = useMapGetter('inboxes/getInboxes');
 const labels = useMapGetter('labels/getLabelsOnSidebar');
 const teams = useMapGetter('teams/getMyTeams');
+const { getCount: getTeamQueueCount } = useTeamQueueCounts();
 const contactCustomViews = useMapGetter('customViews/getContactCustomViews');
 const conversationCustomViews = useMapGetter(
   'customViews/getConversationCustomViews'
@@ -276,6 +279,12 @@ const menuItems = computed(() => {
             name: `${team.name}-${team.id}`,
             label: team.name,
             to: accountScopedRoute('team_conversations', { teamId: team.id }),
+            component: leafProps =>
+              h(TeamLeaf, {
+                label: leafProps.label,
+                active: leafProps.active,
+                count: getTeamQueueCount(team.id),
+              }),
           })),
         },
         {

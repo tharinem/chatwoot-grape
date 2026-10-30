@@ -28,6 +28,64 @@ RSpec.describe 'Teams API', type: :request do
     end
   end
 
+  describe 'GET /api/v1/accounts/{account.id}/teams/queue_counts' do
+    let(:inbox) { create(:inbox, account: account) }
+    let(:other_inbox) { create(:inbox, account: account) }
+    let(:other_team) { create(:team, account: account) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:admin) { create(:user, account: account, role: :administrator) }
+
+    before do
+      create(:inbox_member, user: agent, inbox: inbox)
+      create(:team_member, user: agent, team: team)
+      # fila do time: abertas + sem responsável
+      create_list(:conversation, 2, account: account, inbox: inbox, team: team, assignee: nil, status: :open)
+      create(:conversation, account: account, inbox: other_inbox, team: team, assignee: nil, status: :open)
+      create(:conversation, account: account, inbox: inbox, team: other_team, assignee: nil, status: :open)
+      # fora da fila
+      create(:conversation, account: account, inbox: inbox, team: team, assignee: agent, status: :open)
+      create(:conversation, account: account, inbox: inbox, team: team, assignee: nil, status: :resolved)
+      create(:conversation, account: account, inbox: inbox, team: team, assignee: nil, status: :pending)
+      create(:conversation, account: account, inbox: inbox, team: nil, assignee: nil, status: :open)
+    end
+
+    it 'returns unauthorized for unauthenticated users' do
+      get "/api/v1/accounts/#{account.id}/teams/queue_counts"
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'counts open unassigned conversations per team across all inboxes for administrators' do
+      get "/api/v1/accounts/#{account.id}/teams/queue_counts",
+          headers: admin.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to eq(team.id.to_s => 3, other_team.id.to_s => 1)
+    end
+
+    it 'counts only conversations from inboxes the agent belongs to' do
+      get "/api/v1/accounts/#{account.id}/teams/queue_counts",
+          headers: agent.create_new_auth_token,
+          as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to eq(team.id.to_s => 2, other_team.id.to_s => 1)
+    end
+
+    it 'does not count conversations from other accounts' do
+      other_account = create(:account)
+      foreign_team = create(:team, account: other_account)
+      create(:conversation, account: other_account, team: foreign_team, assignee: nil, status: :open)
+
+      get "/api/v1/accounts/#{account.id}/teams/queue_counts",
+          headers: admin.create_new_auth_token,
+          as: :json
+
+      expect(response.parsed_body.keys).not_to include(foreign_team.id.to_s)
+    end
+  end
+
   describe 'GET /api/v1/accounts/{account.id}/teams/{team_id}' do
     context 'when it is an unauthenticated user' do
       it 'returns unauthorized' do
