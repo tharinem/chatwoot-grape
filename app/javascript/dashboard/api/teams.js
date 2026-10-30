@@ -22,6 +22,10 @@ export class TeamsAPI extends CacheEnabledApiClient {
     return { data: dataToParse };
   }
 
+  getQueueCounts() {
+    return axios.get(`${this.url}/queue_counts`);
+  }
+
   getAgents({ teamId }) {
     return axios.get(`${this.url}/${teamId}/team_members`);
   }

@@ -253,6 +253,7 @@ Rails.application.routes.draw do
           resource :notification_settings, only: [:show, :update]
 
           resources :teams do
+            get :queue_counts, on: :collection
             resources :team_members, only: [:index, :create] do
               collection do
                 delete :destroy

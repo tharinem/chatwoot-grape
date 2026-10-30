@@ -366,6 +366,7 @@
     "BETA": "Beta",
     "REPORTS_OVERVIEW": "Visão geral",
     "REAUTHORIZE": "A conexão com a sua caixa de entrada expirou. Por favor, reconecte para continuar recebendo e enviando mensagens",
+    "TEAM_QUEUE_COUNT": "{count} conversa aberta sem responsável | {count} conversas abertas sem responsável",
     "HELP_CENTER": {
       "TITLE": "Central de Ajuda",
       "ARTICLES": "Artigos",

@@ -367,6 +367,7 @@
     "BETA": "Beta",
     "REPORTS_OVERVIEW": "Overview",
     "REAUTHORIZE": "Your inbox connection has expired, please reconnect\n to continue receiving and sending messages",
+    "TEAM_QUEUE_COUNT": "{count} open conversation without assignee | {count} open conversations without assignee",
     "HELP_CENTER": {
       "TITLE": "Help Center",
       "ARTICLES": "Articles",

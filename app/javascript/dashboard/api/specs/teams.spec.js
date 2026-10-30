@@ -12,6 +12,7 @@ describe('#TeamsAPI', () => {
     expect(teamsAPI).toHaveProperty('getAgents');
     expect(teamsAPI).toHaveProperty('addAgents');
     expect(teamsAPI).toHaveProperty('updateAgents');
+    expect(teamsAPI).toHaveProperty('getQueueCounts');
   });
   describe('API calls', () => {
     const originalAxios = window.axios;
@@ -28,6 +29,11 @@ describe('#TeamsAPI', () => {
 
     afterEach(() => {
       window.axios = originalAxios;
+    });
+
+    it('#getQueueCounts', () => {
+      teamsAPI.getQueueCounts();
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v1/teams/queue_counts');
     });
 
     it('#getAgents', () => {
