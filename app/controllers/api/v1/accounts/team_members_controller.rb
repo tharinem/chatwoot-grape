@@ -7,25 +7,20 @@ class Api::V1::Accounts::TeamMembersController < Api::V1::Accounts::BaseControll
     @team_members = @team.team_members.map(&:user)
   end
 
+  # The member methods run their own transaction and bump the account cache
+  # key only after the commit, so they must not be wrapped in another transaction.
   def create
-    ActiveRecord::Base.transaction do
-      @team_members = @team.add_members(members_to_be_added_ids)
-    end
+    @team_members = @team.add_members(members_to_be_added_ids)
   end
 
   def update
-    ActiveRecord::Base.transaction do
-      @team.add_members(members_to_be_added_ids)
-      @team.remove_members(members_to_be_removed_ids)
-    end
+    @team.update_members(members_to_be_added_ids, members_to_be_removed_ids)
     @team_members = @team.members
     render action: 'create'
   end
 
   def destroy
-    ActiveRecord::Base.transaction do
-      @team.remove_members(params[:user_ids])
-    end
+    @team.remove_members(params[:user_ids])
     head :ok
   end
 

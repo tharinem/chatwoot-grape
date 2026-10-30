@@ -88,6 +88,39 @@ RSpec.describe Inbox do
     end
   end
 
+  describe '#update_members' do
+    let(:inbox) { FactoryBot.create(:inbox) }
+    let(:old_users) { FactoryBot.create_list(:user, 2) }
+    let(:new_users) { FactoryBot.create_list(:user, 2) }
+
+    before do
+      inbox.add_members(old_users.map(&:id))
+      allow(Rails.configuration.dispatcher).to receive(:dispatch)
+    end
+
+    it 'adds and removes members and invalidates the account cache once' do
+      inbox.update_members(new_users.map(&:id), [old_users.first.id])
+
+      expect(inbox.reload.members).to match_array([old_users.last] + new_users)
+      expect(Rails.configuration.dispatcher).to have_received(:dispatch)
+        .with('account.cache_invalidated', kind_of(Time), account: inbox.account, cache_keys: inbox.account.cache_keys)
+        .once
+    end
+
+    it 'bumps the cache key only after the membership transaction is committed' do
+      baseline = ActiveRecord::Base.connection.open_transactions
+      open_transactions_at_bump = nil
+      allow(inbox.account).to receive(:update_cache_key) do
+        open_transactions_at_bump = ActiveRecord::Base.connection.open_transactions
+      end
+
+      inbox.update_members(new_users.map(&:id), [old_users.first.id])
+
+      expect(inbox.account).to have_received(:update_cache_key).with('inbox').once
+      expect(open_transactions_at_bump).to eq(baseline)
+    end
+  end
+
   describe '#facebook?' do
     let(:inbox) do
       FactoryBot.build(:inbox, channel: channel_val)
