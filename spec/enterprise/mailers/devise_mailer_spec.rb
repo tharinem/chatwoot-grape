@@ -21,12 +21,12 @@ RSpec.describe 'Devise::Mailer' do
 
       context 'when user has no inviter' do
         it 'shows standard welcome message without SSO references' do
-          expect(mail.body).to match('We have a suite of powerful tools ready for you to explore.')
-          expect(mail.body).not_to match('via Single Sign-On')
+          expect(mail.body).to match('Antes de começar, precisamos confirmar o seu e-mail.')
+          expect(mail.body).not_to match('login único \(SSO\)')
         end
 
         it 'does not show activation instructions for SAML accounts' do
-          expect(mail.body).not_to match('Please take a moment and click the link below and activate your account')
+          expect(mail.body).not_to match('Clique no link abaixo para ativar a sua conta')
         end
 
         it 'shows confirmation link' do
@@ -39,21 +39,21 @@ RSpec.describe 'Devise::Mailer' do
 
         it 'mentions SSO invitation' do
           expect(mail.body).to match(
-            "#{CGI.escapeHTML(inviter_val.name)}, with #{CGI.escapeHTML(account.name)}, has invited you to access.*via Single Sign-On \\(SSO\\)"
+            "#{CGI.escapeHTML(inviter_val.name)}, da #{CGI.escapeHTML(account.name)}, convidou você para acessar.*com login único \\(SSO\\)"
           )
         end
 
         it 'explains SSO authentication' do
-          expect(mail.body).to match('Your organization uses SSO for secure authentication')
-          expect(mail.body).to match('You will not need a password to access your account')
+          expect(mail.body).to match('A sua empresa usa SSO para entrar com segurança')
+          expect(mail.body).to match('Você não precisa de senha para acessar a sua conta')
         end
 
         it 'does not show standard invitation message' do
-          expect(mail.body).not_to match('has invited you to try out')
+          expect(mail.body).not_to match('convidou você para usar a')
         end
 
         it 'directs to SSO portal instead of password reset' do
-          expect(mail.body).to match('You can access your account by logging in through your organization\'s SSO portal')
+          expect(mail.body).to match('Você pode entrar na sua conta pelo portal de SSO da sua empresa')
           expect(mail.body).not_to include('app/auth/password/edit')
         end
       end
@@ -66,7 +66,7 @@ RSpec.describe 'Devise::Mailer' do
         end
 
         it 'shows SSO login instructions' do
-          expect(mail.body).to match('You can now access your account by logging in through your organization\'s SSO portal')
+          expect(mail.body).to match('Você já pode entrar na sua conta pelo portal de SSO da sua empresa')
           expect(mail.body).not_to include('/auth/sign_in')
         end
       end
@@ -90,7 +90,7 @@ RSpec.describe 'Devise::Mailer' do
         end
 
         it 'shows SSO login instructions instead of regular login' do
-          expect(mail.body).to match('You can now access your account by logging in through your organization\'s SSO portal')
+          expect(mail.body).to match('Você já pode entrar na sua conta pelo portal de SSO da sua empresa')
           expect(mail.body).not_to include('/auth/sign_in')
         end
       end
@@ -101,9 +101,9 @@ RSpec.describe 'Devise::Mailer' do
         let(:inviter_val) { create(:user, :administrator, skip_confirmation: true, account: account) }
 
         it 'shows standard invitation without SSO references' do
-          expect(mail.body).to match('has invited you to try out Chatwoot')
-          expect(mail.body).not_to match('via Single Sign-On')
-          expect(mail.body).not_to match('SSO portal')
+          expect(mail.body).to match('convidou você para usar a Chatwoot')
+          expect(mail.body).not_to match('login único \(SSO\)')
+          expect(mail.body).not_to match('portal de SSO')
         end
 
         it 'shows password reset link' do
@@ -113,8 +113,8 @@ RSpec.describe 'Devise::Mailer' do
 
       context 'when user has no inviter' do
         it 'shows standard welcome message and activation instructions' do
-          expect(mail.body).to match('We have a suite of powerful tools ready for you to explore')
-          expect(mail.body).to match('Please take a moment and click the link below and activate your account')
+          expect(mail.body).to match('Antes de começar, precisamos confirmar o seu e-mail')
+          expect(mail.body).to match('Clique no link abaixo para ativar a sua conta')
         end
 
         it 'shows confirmation link' do
@@ -131,7 +131,7 @@ RSpec.describe 'Devise::Mailer' do
 
         it 'shows regular login link' do
           expect(mail.body).to include('/auth/sign_in')
-          expect(mail.body).not_to match('SSO portal')
+          expect(mail.body).not_to match('portal de SSO')
         end
       end
 

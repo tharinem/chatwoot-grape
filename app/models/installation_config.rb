@@ -16,8 +16,8 @@
 #
 class InstallationConfig < ApplicationRecord
   GRAPE_BRANDING = {
-    'INSTALLATION_NAME' => 'Grape Ai',
-    'BRAND_NAME' => 'Grape Ai',
+    'INSTALLATION_NAME' => 'Grape AI',
+    'BRAND_NAME' => 'Grape AI',
     'LOGO' => '/brand-assets/grape-logo-light.png',
     'LOGO_DARK' => '/brand-assets/grape-logo-dark.png',
     'LOGO_THUMBNAIL' => '/brand-assets/grape-thumbnail.png',

@@ -1,5 +1,5 @@
-# Grape Ai Branding Initializer
-# Applies Grape Ai branding after Rails boots, ensuring it persists across restarts.
+# Grape AI Branding Initializer
+# Applies Grape AI branding after Rails boots, ensuring it persists across restarts.
 # Runs on every boot in production to override any Chatwoot defaults set by ConfigLoader.
 
 Rails.application.config.after_initialize do
@@ -7,8 +7,8 @@ Rails.application.config.after_initialize do
   next unless ActiveRecord::Base.connection.table_exists?('installation_configs')
 
   branding = {
-    'INSTALLATION_NAME' => 'Grape Ai',
-    'BRAND_NAME' => 'Grape Ai',
+    'INSTALLATION_NAME' => 'Grape AI',
+    'BRAND_NAME' => 'Grape AI',
     'LOGO' => '/brand-assets/grape-logo-light.png',
     'LOGO_DARK' => '/brand-assets/grape-logo-dark.png',
     'LOGO_THUMBNAIL' => '/brand-assets/grape-thumbnail.png',

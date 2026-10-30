@@ -1,4 +1,4 @@
-name: Publish Grape Ai custom Docker image
+name: Publish Grape AI custom Docker image
 
 on:
   push:
