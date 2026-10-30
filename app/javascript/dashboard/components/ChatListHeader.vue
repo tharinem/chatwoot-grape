@@ -16,6 +16,8 @@ const props = defineProps({
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
   isListLoading: { type: Boolean, required: true },
+  showSelectionToggle: { type: Boolean, default: false },
+  isSelectionMode: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -24,6 +26,7 @@ const emit = defineEmits([
   'resetFilters',
   'basicFilterChange',
   'filtersModal',
+  'toggleSelectionMode',
 ]);
 
 const { uiSettings, updateUISettings } = useUISettings();
@@ -86,6 +89,26 @@ const toggleConversationLayout = () => {
       </span>
     </div>
     <div class="flex items-center gap-1">
+      <NextButton
+        v-if="showSelectionToggle || isSelectionMode"
+        data-testid="selection-mode-toggle"
+        :label="
+          isSelectionMode
+            ? $t('CHAT_LIST.SELECTION_MODE.DONE')
+            : $t('CHAT_LIST.SELECTION_MODE.START')
+        "
+        :aria-label="
+          isSelectionMode
+            ? $t('CHAT_LIST.SELECTION_MODE.DONE')
+            : $t('CHAT_LIST.SELECTION_MODE.START_LABEL')
+        "
+        :aria-pressed="isSelectionMode"
+        :icon="isSelectionMode ? 'i-lucide-check' : 'i-lucide-list-checks'"
+        :color="isSelectionMode ? 'blue' : 'slate'"
+        xs
+        faded
+        @click="emit('toggleSelectionMode')"
+      />
       <template v-if="hasAppliedFilters && !hasActiveFolders">
         <div class="relative">
           <NextButton
