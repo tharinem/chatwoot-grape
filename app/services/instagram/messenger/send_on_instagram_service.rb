@@ -32,6 +32,7 @@ class Instagram::Messenger::SendOnInstagramService < Instagram::BaseSendService
     global_config = GlobalConfig.get('ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT')
 
     return params unless global_config['ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT']
+    return params unless human_agent_tag_applicable?
 
     params[:messaging_type] = 'MESSAGE_TAG'
     params[:tag] = 'HUMAN_AGENT'
