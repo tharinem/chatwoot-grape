@@ -78,4 +78,35 @@ describe Whatsapp::Providers::Whatsapp360DialogService do
       end
     end
   end
+
+  describe 'agent name prefix (WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS)' do
+    let(:agent) { create(:user, account: whatsapp_channel.account, display_name: 'Jenifer') }
+    let(:message) do
+      create(:message, message_type: :outgoing, content: 'Oi, tudo bem?', inbox: whatsapp_channel.inbox, sender: agent)
+    end
+
+    before do
+      stub_request(:post, 'https://waba.360dialog.io/v1/messages')
+        .to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+    end
+
+    def sent_body
+      body = nil
+      expect(WebMock).to(have_requested(:post, 'https://waba.360dialog.io/v1/messages').with { |req| body = JSON.parse(req.body) })
+      body
+    end
+
+    it 'prefixes human agent text messages when the inbox is enabled' do
+      with_modified_env('WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS' => whatsapp_channel.inbox.id.to_s) do
+        expect(service.send_message('+123456789', message)).to eq 'message_id'
+      end
+      expect(sent_body['text']['body']).to eq "*Jenifer:*\nOi, tudo bem?"
+      expect(message.reload.content).to eq 'Oi, tudo bem?'
+    end
+
+    it 'sends the content unchanged when the inbox is not enabled' do
+      service.send_message('+123456789', message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+  end
 end
