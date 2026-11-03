@@ -108,30 +108,85 @@ describe Instagram::SendOnInstagramService do
       end
 
       context 'with message_tag HUMAN_AGENT' do
-        before do
-          InstallationConfig.where(name: 'ENABLE_MESSENGER_CHANNEL_HUMAN_AGENT').first_or_create(value: true)
+        let(:agent) { create(:user, account: account) }
+        let(:tagged_params) { { messaging_type: 'MESSAGE_TAG', tag: 'HUMAN_AGENT' } }
+
+        def stub_human_agent_config(enabled)
+          allow(GlobalConfig).to receive(:get).with('ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT')
+                                              .and_return({ 'ENABLE_INSTAGRAM_CHANNEL_HUMAN_AGENT' => enabled }.with_indifferent_access)
         end
 
-        it 'if message is sent from chatwoot and is outgoing' do
-          message = create(:message, message_type: 'outgoing', inbox: instagram_inbox, account: account, conversation: conversation)
+        def create_incoming_message(at:)
+          travel_to(at) do
+            create(:message, message_type: 'incoming', inbox: instagram_inbox, account: account, conversation: conversation)
+          end
+        end
 
-          allow(HTTParty).to receive(:post).with(
-            {
-              recipient: { id: contact.get_source_id(instagram_inbox.id) },
-              message: {
-                text: message.content
-              },
-              messaging_type: 'MESSAGE_TAG',
-              tag: 'HUMAN_AGENT'
-            }
-          ).and_return(
-            {
-              'message_id': 'random_message_id'
-            }
-          )
+        def create_outgoing_message(sender:)
+          message = build(:message, message_type: 'outgoing', inbox: instagram_inbox, account: account, conversation: conversation)
+          message.sender = sender
+          message.save!
+          message
+        end
+
+        def posted_body
+          body = nil
+          expect(HTTParty).to have_received(:post) { |_url, options| body = options[:body] }
+          body
+        end
+
+        it 'does not add the tag when the config is off' do
+          stub_human_agent_config(false)
+          create_incoming_message(at: 2.days.ago)
+          message = create_outgoing_message(sender: agent)
 
           described_class.new(message: message).perform
-          expect(HTTParty).to have_received(:post)
+
+          expect(posted_body).not_to include(:messaging_type, :tag)
+        end
+
+        it 'does not add the tag for a human agent reply inside the 24h window' do
+          stub_human_agent_config(true)
+          create_incoming_message(at: 2.hours.ago)
+          message = create_outgoing_message(sender: agent)
+
+          described_class.new(message: message).perform
+
+          expect(posted_body).not_to include(:messaging_type, :tag)
+        end
+
+        it 'adds the tag for a human agent reply outside the 24h window' do
+          stub_human_agent_config(true)
+          create_incoming_message(at: 2.days.ago)
+          message = create_outgoing_message(sender: agent)
+
+          described_class.new(message: message).perform
+
+          expect(posted_body).to include(
+            recipient: { id: contact.get_source_id(instagram_inbox.id) },
+            message: { text: message.outgoing_content },
+            **tagged_params
+          )
+        end
+
+        it 'does not add the tag for automation messages (no sender) outside the 24h window' do
+          stub_human_agent_config(true)
+          create_incoming_message(at: 2.days.ago)
+          message = create_outgoing_message(sender: nil)
+
+          described_class.new(message: message).perform
+
+          expect(posted_body).not_to include(:messaging_type, :tag)
+        end
+
+        it 'does not add the tag for agent bot messages outside the 24h window' do
+          stub_human_agent_config(true)
+          create_incoming_message(at: 2.days.ago)
+          message = create_outgoing_message(sender: create(:agent_bot, account: account))
+
+          described_class.new(message: message).perform
+
+          expect(posted_body).not_to include(:messaging_type, :tag)
         end
       end
 

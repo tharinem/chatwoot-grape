@@ -84,6 +84,17 @@ class Instagram::BaseSendService < Base::SendOnChannelService
     'file'
   end
 
+  # Meta policy: the HUMAN_AGENT tag may only be used for messages typed by a human
+  # agent and sent outside the standard 24h messaging window. Automation-rule
+  # messages (no sender), AgentBot replies and replies inside the window are sent
+  # as standard RESPONSE messages.
+  def human_agent_tag_applicable?
+    return false unless message.sender.is_a?(User)
+
+    last_incoming = message.conversation.messages.incoming.last
+    last_incoming.present? && last_incoming.created_at < 24.hours.ago
+  end
+
   # Methods to be implemented by child classes
   def send_message(message_content)
     raise NotImplementedError, 'Subclasses must implement send_message'
