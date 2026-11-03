@@ -7,11 +7,11 @@ class Api::V1::Accounts::InboxMembersController < Api::V1::Accounts::BaseControl
     fetch_updated_agents
   end
 
+  # The member methods run their own transaction and bump the account cache
+  # key only after the commit, so they must not be wrapped in another transaction.
   def create
     authorize @inbox, :create?
-    ActiveRecord::Base.transaction do
-      @inbox.add_members(agents_to_be_added_ids)
-    end
+    @inbox.add_members(agents_to_be_added_ids)
     fetch_updated_agents
   end
 
@@ -23,9 +23,7 @@ class Api::V1::Accounts::InboxMembersController < Api::V1::Accounts::BaseControl
 
   def destroy
     authorize @inbox, :destroy?
-    ActiveRecord::Base.transaction do
-      @inbox.remove_members(params[:user_ids])
-    end
+    @inbox.remove_members(params[:user_ids])
     head :ok
   end
 
@@ -40,10 +38,7 @@ class Api::V1::Accounts::InboxMembersController < Api::V1::Accounts::BaseControl
     # get the list of  user_ids from params
     # the missing ones are the agents which are to be deleted from the inbox
     # the new ones are the agents which are to be added to the inbox
-    ActiveRecord::Base.transaction do
-      @inbox.add_members(agents_to_be_added_ids)
-      @inbox.remove_members(agents_to_be_removed_ids)
-    end
+    @inbox.update_members(agents_to_be_added_ids, agents_to_be_removed_ids)
   end
 
   def agents_to_be_added_ids

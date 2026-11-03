@@ -282,4 +282,62 @@ RSpec.describe 'Inbox Member API', type: :request do
       end
     end
   end
+
+  describe 'account cache invalidation' do
+    # Membership changes must bump the account cache key and broadcast
+    # account.cache_invalidated exactly once per request, so the dashboard
+    # refetches inboxes for the affected agents.
+    let(:administrator) { create(:user, account: account, role: :administrator) }
+    let(:url) { "/api/v1/accounts/#{account.id}/inbox_members" }
+    let(:old_agent) { create(:user, account: account, role: :agent) }
+    let(:new_agent) { create(:user, account: account, role: :agent) }
+
+    shared_examples 'invalidates the account cache once' do
+      it 'bumps the inbox cache key and broadcasts the invalidation once' do
+        key_before = account.cache_keys[:inbox]
+        allow(Rails.configuration.dispatcher).to receive(:dispatch)
+
+        perform_request
+
+        expect(response).to have_http_status(:success)
+        expect(account.cache_keys[:inbox]).not_to eq(key_before)
+        expect(Rails.configuration.dispatcher).to have_received(:dispatch)
+          .with(Events::Types::ACCOUNT_CACHE_INVALIDATED, anything, hash_including(account: account)).once
+      end
+    end
+
+    before { create(:inbox_member, inbox: inbox, user: old_agent) }
+
+    context 'when adding members' do
+      let(:perform_request) do
+        post url, params: { inbox_id: inbox.id, user_ids: [old_agent.id, new_agent.id] },
+                  headers: administrator.create_new_auth_token, as: :json
+      end
+
+      it_behaves_like 'invalidates the account cache once'
+    end
+
+    context 'when replacing the member list' do
+      let(:perform_request) do
+        patch url, params: { inbox_id: inbox.id, user_ids: [new_agent.id] },
+                   headers: administrator.create_new_auth_token, as: :json
+      end
+
+      it_behaves_like 'invalidates the account cache once'
+
+      it 'applies the additions and removals' do
+        perform_request
+        expect(inbox.reload.members).to contain_exactly(new_agent)
+      end
+    end
+
+    context 'when removing members' do
+      let(:perform_request) do
+        delete url, params: { inbox_id: inbox.id, user_ids: [old_agent.id] },
+                    headers: administrator.create_new_auth_token, as: :json
+      end
+
+      it_behaves_like 'invalidates the account cache once'
+    end
+  end
 end

@@ -88,16 +88,26 @@ class Inbox < ApplicationRecord
   # @param user_ids [Array<Integer>] Array of user IDs to add as members
   # @return [void]
   def add_members(user_ids)
-    inbox_members.create!(user_ids.map { |user_id| { user_id: user_id } })
-    update_account_cache
+    revalidating_account_cache { create_members(user_ids) }
   end
 
   # Removes multiple members from the inbox
   # @param user_ids [Array<Integer>] Array of user IDs to remove
   # @return [void]
   def remove_members(user_ids)
-    inbox_members.where(user_id: user_ids).destroy_all
-    update_account_cache
+    revalidating_account_cache { destroy_members(user_ids) }
+  end
+
+  # Adds and removes members in a single transaction, bumping the account
+  # cache key once after the commit
+  # @param user_ids_to_add [Array<Integer>] Array of user IDs to add as members
+  # @param user_ids_to_remove [Array<Integer>] Array of user IDs to remove
+  # @return [void]
+  def update_members(user_ids_to_add, user_ids_to_remove)
+    revalidating_account_cache do
+      create_members(user_ids_to_add)
+      destroy_members(user_ids_to_remove)
+    end
   end
 
   # Sanitizes inbox name for balanced email provider compatibility
@@ -204,6 +214,14 @@ class Inbox < ApplicationRecord
   end
 
   private
+
+  def create_members(user_ids)
+    inbox_members.create!(user_ids.map { |user_id| { user_id: user_id } })
+  end
+
+  def destroy_members(user_ids)
+    inbox_members.where(user_id: user_ids).destroy_all
+  end
 
   def default_name_for_blank_name
     email? ? display_name_from_email : ''
