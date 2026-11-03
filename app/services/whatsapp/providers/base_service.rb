@@ -72,6 +72,45 @@ class Whatsapp::Providers::BaseService
     rows
   end
 
+  # Text sent to WhatsApp for a session message body or attachment caption.
+  # Opt-in per inbox (WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS="17,42"): messages
+  # typed by a human agent reach the customer as "*<agent name>:*\n<content>".
+  # Only the outgoing payload changes; the stored message content does not.
+  def whatsapp_outgoing_content(message)
+    content = message.outgoing_content
+    return content unless agent_name_prefix?(message, content)
+
+    name = message.sender.available_name
+    prefix = "*#{name}:*"
+    return content if content.start_with?(prefix)
+
+    # The agent typed the prefix already: markdown rendering turns "*Name:*" into "_Name:_".
+    typed_prefix = "_#{name}:_"
+    return prefix + content.delete_prefix(typed_prefix) if message.content.to_s.start_with?(prefix) && content.start_with?(typed_prefix)
+
+    "#{prefix}\n#{content}"
+  end
+
+  def agent_name_prefix?(message, content)
+    content.present? && agent_name_prefix_inbox? && human_agent_message?(message)
+  end
+
+  # Outgoing, public, typed by a User; not a template, campaign or automation rule.
+  def human_agent_message?(message)
+    return false unless message.outgoing? && !message.private?
+    return false unless message.sender.is_a?(User) && message.sender.available_name.present?
+
+    additional_attributes = message.additional_attributes.to_h
+    additional_attributes['template_params'].blank? &&
+      additional_attributes['campaign_id'].blank? &&
+      message.content_attributes.to_h['automation_rule_id'].blank?
+  end
+
+  def agent_name_prefix_inbox?
+    inbox_ids = ENV.fetch('WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS', '').split(',').map(&:strip).compact_blank
+    inbox_ids.include?(whatsapp_channel.inbox&.id.to_s)
+  end
+
   def create_payload(type, message_content, action)
     {
       'type': type,

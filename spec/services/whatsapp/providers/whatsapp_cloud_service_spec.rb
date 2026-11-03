@@ -273,6 +273,124 @@ describe Whatsapp::Providers::WhatsappCloudService do
     end
   end
 
+  describe 'agent name prefix (WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS)' do
+    let(:messages_url) { 'https://graph.facebook.com/v13.0/123456789/messages' }
+    let(:agent) { create(:user, account: whatsapp_channel.account, name: 'Jenifer Souza', display_name: 'Jenifer') }
+    let(:enabled_env) { { 'WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS' => " 9999 , #{whatsapp_channel.inbox.id}" } }
+    let(:agent_message) do
+      create(:message, conversation: conversation, message_type: :outgoing, content: 'Oi, tudo bem?',
+                       inbox: whatsapp_channel.inbox, sender: agent)
+    end
+
+    def sent_body
+      body = nil
+      expect(WebMock).to(have_requested(:post, messages_url).with { |req| body = JSON.parse(req.body) })
+      body
+    end
+
+    def send_with_env(msg, env = enabled_env)
+      with_modified_env(env) { service.send_message('+123456789', msg) }
+    end
+
+    def attach_image(msg)
+      attachment = msg.attachments.new(account_id: msg.account_id, file_type: :image)
+      attachment.file.attach(io: Rails.root.join('spec/assets/avatar.png').open, filename: 'avatar.png', content_type: 'image/png')
+    end
+
+    before do
+      stub_request(:post, messages_url).to_return(status: 200, body: whatsapp_response.to_json, headers: response_headers)
+    end
+
+    it 'prefixes human agent text messages with the bold display name' do
+      expect(send_with_env(agent_message)).to eq 'message_id'
+      expect(sent_body['text']['body']).to eq "*Jenifer:*\nOi, tudo bem?"
+    end
+
+    it 'falls back to the agent name when there is no display name' do
+      agent.update!(display_name: nil)
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq "*Jenifer Souza:*\nOi, tudo bem?"
+    end
+
+    it 'does not change the stored message content' do
+      send_with_env(agent_message)
+      expect(agent_message.reload.content).to eq 'Oi, tudo bem?'
+    end
+
+    it 'keeps messaging_account_id in the request body' do
+      whatsapp_channel.provider_config['messaging_account_id'] = '998877665544'
+      whatsapp_channel.save!
+      send_with_env(agent_message)
+      expect(sent_body).to include('messaging_account_id' => '998877665544')
+      expect(sent_body['text']['body']).to eq "*Jenifer:*\nOi, tudo bem?"
+    end
+
+    it 'does not prefix when the env var is not set' do
+      send_with_env(agent_message, { 'WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS' => nil })
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix when the inbox is not listed' do
+      send_with_env(agent_message, { 'WHATSAPP_AGENT_NAME_PREFIX_INBOX_IDS' => '9999' })
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix messages without a sender (automations)' do
+      agent_message.update!(sender: nil)
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix automation rule messages' do
+      agent_message.update!(content_attributes: { automation_rule_id: 1 })
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix AgentBot messages' do
+      agent_message.update!(sender: create(:agent_bot, account: whatsapp_channel.account))
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix campaign messages' do
+      agent_message.update!(additional_attributes: { campaign_id: 1 })
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix template messages' do
+      agent_message.update!(additional_attributes: { template_params: { name: 'hello' } })
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not prefix private notes' do
+      agent_message.update!(private: true)
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq 'Oi, tudo bem?'
+    end
+
+    it 'does not double prefix when the agent already typed the name' do
+      agent_message.update!(content: "*Jenifer:*\nOi, tudo bem?")
+      send_with_env(agent_message)
+      expect(sent_body['text']['body']).to eq "*Jenifer:*\nOi, tudo bem?"
+    end
+
+    it 'prefixes the caption of attachments' do
+      attach_image(agent_message)
+      send_with_env(agent_message)
+      expect(sent_body['image']['caption']).to eq "*Jenifer:*\nOi, tudo bem?"
+    end
+
+    it 'sends attachments without caption unchanged' do
+      agent_message.update!(content: nil)
+      attach_image(agent_message)
+      send_with_env(agent_message)
+      expect(sent_body['image']['caption']).to be_blank
+    end
+  end
+
   describe '#sync_templates' do
     context 'when called' do
       it 'updated the message templates' do
