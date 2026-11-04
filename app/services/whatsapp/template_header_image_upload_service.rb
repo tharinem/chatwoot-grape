@@ -49,10 +49,11 @@ class Whatsapp::TemplateHeaderImageUploadService
     @blob = @signed_blob_id.present? ? ActiveStorage::Blob.find_signed(@signed_blob_id) : nil
   end
 
-  # GlobalConfigService reads the installation config (used by embedded
-  # signup) and falls back to ENV['WHATSAPP_APP_ID'].
+  # The upload must use the app that owns the inbox token. ENV wins because the
+  # installation config (embedded signup) may point to a different Meta app.
   def app_id
-    @app_id ||= GlobalConfigService.load('WHATSAPP_APP_ID', '').to_s.strip
+    @app_id ||= ENV.fetch('WHATSAPP_APP_ID', '').to_s.strip.presence ||
+                GlobalConfigService.load('WHATSAPP_APP_ID', '').to_s.strip
   end
 
   def access_token

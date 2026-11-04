@@ -333,6 +333,35 @@ RSpec.describe Whatsapp::TemplateCreationService do
         expect(a_request(:post, //)).not_to have_been_made
       end
 
+      context 'when WHATSAPP_APP_ID is set in ENV' do
+        before { allow(ENV).to receive(:fetch).with('WHATSAPP_APP_ID', '').and_return('999000222') }
+
+        it 'uses the ENV app id instead of the installation config' do
+          env_session_url = 'https://graph.facebook.com/v14.0/999000222/uploads'
+          session_body = { id: 'upload:MTphdHRhY2htZW50?sig=ARZ' }.to_json
+          stub_request(:post, env_session_url).with(query: hash_including({})).to_return(status: 200, body: session_body)
+          stub_file_upload
+          stub_success
+
+          expect(perform(image_params)[:success]).to be(true)
+          expect(a_request(:post, upload_session_url).with(query: hash_including({}))).not_to have_been_made
+          expect(GlobalConfigService).not_to have_received(:load).with('WHATSAPP_APP_ID', '')
+        end
+      end
+
+      context 'when WHATSAPP_APP_ID is blank in ENV' do
+        before { allow(ENV).to receive(:fetch).with('WHATSAPP_APP_ID', '').and_return('') }
+
+        it 'falls back to the installation config' do
+          stub_upload_session
+          stub_file_upload
+          stub_success
+
+          expect(perform(image_params)[:success]).to be(true)
+          expect(a_request(:post, upload_session_url).with(query: hash_including({}))).to have_been_made.once
+        end
+      end
+
       context 'when WHATSAPP_APP_ID is not configured' do
         let(:app_id) { nil }
 
