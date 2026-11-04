@@ -3,6 +3,7 @@ import {
   validateTemplateDraft,
   buildPreview,
   buildTemplatePayload,
+  validateHeaderImageFile,
 } from '../whatsappTemplateBuilder';
 
 const baseDraft = {
@@ -226,6 +227,55 @@ describe('#whatsappTemplateBuilder', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('image header', () => {
+    const imageDraft = {
+      ...baseDraft,
+      headerFormat: 'IMAGE',
+      headerImage: 'signed-blob-id',
+      headerImageUrl: 'https://chat.example.com/blob.png',
+      headerText: 'ignorado',
+    };
+
+    it('requires the uploaded image', () => {
+      expect(
+        validateTemplateDraft({ ...imageDraft, headerImage: '' })
+      ).toContainEqual({ field: 'header_image', code: 'required' });
+      expect(validateTemplateDraft(imageDraft)).toEqual([]);
+    });
+
+    it('sends the image instead of the header text', () => {
+      expect(buildTemplatePayload(imageDraft)).toEqual({
+        name: 'boas_vindas',
+        category: 'MARKETING',
+        language: 'pt_BR',
+        body: 'Oi! Temos novidades para você esta semana.',
+        header_format: 'IMAGE',
+        header_image: 'signed-blob-id',
+      });
+    });
+
+    it('previews the image and no text header', () => {
+      const preview = buildPreview(imageDraft);
+      expect(preview.header).toBe('');
+      expect(preview.headerImage).toBe('https://chat.example.com/blob.png');
+    });
+
+    it('accepts jpg and png up to 5 MB only', () => {
+      const file = (type, size) => ({ type, size });
+      expect(validateHeaderImageFile(file('image/png', 1000))).toBeNull();
+      expect(
+        validateHeaderImageFile(file('image/jpeg', 5 * 1024 * 1024))
+      ).toBeNull();
+      expect(validateHeaderImageFile(file('image/gif', 1000))).toBe(
+        'invalid_file_type'
+      );
+      expect(
+        validateHeaderImageFile(file('image/png', 5 * 1024 * 1024 + 1))
+      ).toBe('file_too_large');
+      expect(validateHeaderImageFile(null)).toBe('invalid_file_type');
     });
   });
 });

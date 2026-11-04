@@ -21,6 +21,23 @@ RSpec.describe 'Api::V1::Accounts::UploadController', type: :request do
         expect(blob['blob_id']).to be_present
       end
 
+      it 'returns a public proxy url on FRONTEND_URL that serves the file without authentication' do
+        allow(ENV).to receive(:fetch).and_call_original
+        allow(ENV).to receive(:fetch).with('FRONTEND_URL', anything).and_return('https://chat.example.com')
+        post upload_url,
+             headers: user.create_new_auth_token,
+             params: { attachment: file }
+
+        public_url = response.parsed_body['public_url']
+        expect(public_url).to start_with('https://chat.example.com/rails/active_storage/blobs/proxy/')
+
+        get URI.parse(public_url).path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq('image/png')
+        expect(response.body.bytesize).to eq(File.size(Rails.root.join('spec/assets/avatar.png')))
+      end
+
       it 'does not upload when unauthorized' do
         post upload_url,
              headers: {},

@@ -251,6 +251,122 @@ RSpec.describe Whatsapp::TemplateCreationService do
       end
     end
 
+    context 'when the header is an image' do
+      let(:upload_session_url) { 'https://graph.facebook.com/v14.0/555000111/uploads' }
+      let(:upload_url) { 'https://graph.facebook.com/v14.0/upload:MTphdHRhY2htZW50' }
+      let(:image_path) { Rails.root.join('spec/assets/avatar.png') }
+      let(:blob) do
+        ActiveStorage::Blob.create_and_upload!(io: File.open(image_path), filename: 'promo.png', content_type: 'image/png')
+      end
+      let(:image_params) { base_params.merge(header_format: 'IMAGE', header_image: blob.signed_id, header_text: 'ignorado') }
+      let(:app_id) { '555000111' }
+
+      def stub_upload_session(status: 200, body: { id: 'upload:MTphdHRhY2htZW50?sig=ARZ' }.to_json)
+        stub_request(:post, upload_session_url).with(query: hash_including({})).to_return(status: status, body: body)
+      end
+
+      def stub_file_upload(status: 200, body: { h: '4::aW1hZ2UtaGFuZGxl' }.to_json)
+        stub_request(:post, upload_url).with(query: { sig: 'ARZ' }).to_return(status: status, body: body)
+      end
+
+      before do
+        allow(GlobalConfigService).to receive(:load).and_call_original
+        allow(GlobalConfigService).to receive(:load).with('WHATSAPP_APP_ID', '').and_return(app_id)
+      end
+
+      it 'uploads the image with the resumable upload api and sends the handle as the header example' do
+        stub_upload_session
+        stub_file_upload
+        stub_success
+
+        result = perform(image_params)
+
+        expect(result[:success]).to be(true)
+        expect(
+          a_request(:post, upload_session_url).with(
+            query: { file_name: 'promo.png', file_length: File.size(image_path).to_s, file_type: 'image/png' },
+            headers: { 'Authorization' => 'Bearer test_key' }
+          )
+        ).to have_been_made.once
+        expect(
+          a_request(:post, upload_url).with(
+            query: { sig: 'ARZ' }, headers: { 'Authorization' => 'OAuth test_key', 'file_offset' => '0' }, body: File.binread(image_path)
+          )
+        ).to have_been_made.once
+        expect(
+          a_request(:post, templates_url).with do |req|
+            JSON.parse(req.body)['components'].first ==
+              { 'type' => 'HEADER', 'format' => 'IMAGE', 'example' => { 'header_handle' => ['4::aW1hZ2UtaGFuZGxl'] } }
+          end
+        ).to have_been_made.once
+      end
+
+      it 'requires the image' do
+        result = perform(image_params.except(:header_image))
+
+        expect(result).to include(success: false, error_type: :validation)
+        expect(result[:errors]).to include(field: 'header_image', code: 'required')
+        expect(a_request(:post, //)).not_to have_been_made
+      end
+
+      it 'rejects an unknown header format' do
+        expect(perform(base_params.merge(header_format: 'VIDEO'))[:errors]).to include(field: 'header_format', code: 'invalid_value')
+      end
+
+      it 'rejects an image id that does not resolve to a blob' do
+        expect(perform(image_params.merge(header_image: 'forged'))[:errors]).to include(field: 'header_image', code: 'invalid_value')
+        expect(a_request(:post, //)).not_to have_been_made
+      end
+
+      it 'rejects files that are not jpg or png' do
+        pdf = ActiveStorage::Blob.create_and_upload!(io: File.open(Rails.root.join('spec/assets/sample.pdf')), filename: 'a.pdf')
+
+        expect(perform(image_params.merge(header_image: pdf.signed_id))[:errors]).to include(field: 'header_image', code: 'invalid_file_type')
+      end
+
+      it 'rejects images larger than 5 MB' do
+        large = ActiveStorage::Blob.create_and_upload!(
+          io: StringIO.new('a' * (5.megabytes + 1)), filename: 'big.png', content_type: 'image/png', identify: false
+        )
+
+        expect(perform(image_params.merge(header_image: large.signed_id))[:errors]).to include(field: 'header_image', code: 'file_too_large')
+        expect(a_request(:post, //)).not_to have_been_made
+      end
+
+      context 'when WHATSAPP_APP_ID is not configured' do
+        let(:app_id) { nil }
+
+        it 'returns a validation error without calling Meta' do
+          expect(perform(image_params)[:errors]).to include(field: 'header_image', code: 'app_id_missing')
+          expect(a_request(:post, //)).not_to have_been_made
+        end
+      end
+
+      it 'returns the Meta error when the upload session is refused' do
+        stub_upload_session(status: 400, body: { error: { message: 'Invalid OAuth access token', code: 190 } }.to_json)
+
+        result = perform(image_params)
+
+        expect(result).to include(success: false, error_type: :meta, message: 'Invalid OAuth access token')
+        expect(a_request(:post, templates_url)).not_to have_been_made
+      end
+
+      it 'returns request_failed when the upload answers without a handle' do
+        stub_upload_session
+        stub_file_upload(body: '{}')
+
+        expect(perform(image_params)).to include(success: false, error_type: :request_failed)
+        expect(a_request(:post, templates_url)).not_to have_been_made
+      end
+
+      it 'returns request_failed when the upload times out' do
+        stub_upload_session
+        stub_request(:post, upload_url).with(query: { sig: 'ARZ' }).to_timeout
+
+        expect(perform(image_params)).to include(success: false, error_type: :request_failed)
+      end
+    end
+
     context 'when the request fails' do
       let(:request_failed) { { success: false, error_type: :request_failed, message: 'request_failed' } }
 

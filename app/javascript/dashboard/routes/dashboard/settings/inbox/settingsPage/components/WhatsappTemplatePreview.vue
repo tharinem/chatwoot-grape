@@ -10,6 +10,12 @@ const props = defineProps({
   template: { type: Object, default: null },
 });
 
+// Meta returns a sample image URL as the header_handle of synced templates
+const sampleImageUrl = header => {
+  const handle = header?.example?.header_handle?.[0] || '';
+  return /^https?:\/\//.test(handle) ? handle : '';
+};
+
 const previewFromTemplate = template => {
   const header = findComponentByType(template, 'HEADER');
   const body = findComponentByType(template, 'BODY');
@@ -17,6 +23,7 @@ const previewFromTemplate = template => {
   const buttons = findComponentByType(template, 'BUTTONS');
 
   return {
+    ...(header?.format === 'IMAGE' && { headerImage: sampleImageUrl(header) }),
     header: header?.format === 'TEXT' ? header.text || '' : '',
     body: body?.text || '',
     footer: footer?.text || '',
@@ -32,6 +39,8 @@ const preview = computed(() => {
   if (props.draft) return buildPreview(props.draft);
   return { header: '', body: '', footer: '', buttons: [] };
 });
+
+const hasImageHeader = computed(() => 'headerImage' in preview.value);
 </script>
 
 <template>
@@ -42,6 +51,22 @@ const preview = computed(() => {
     <div
       class="max-w-xs rounded-lg rounded-tl-none bg-n-solid-1 p-3 shadow-sm outline outline-1 outline-n-weak"
     >
+      <template v-if="hasImageHeader">
+        <img
+          v-if="preview.headerImage"
+          :src="preview.headerImage"
+          alt=""
+          class="mb-2 max-h-48 w-full rounded-md object-cover"
+          data-test-id="preview-header-image"
+        />
+        <div
+          v-else
+          class="mb-2 flex h-32 w-full items-center justify-center rounded-md bg-n-alpha-2 text-n-slate-10"
+          data-test-id="preview-header-image-placeholder"
+        >
+          <span class="i-lucide-image size-8" />
+        </div>
+      </template>
       <p
         v-if="preview.header"
         class="mb-1 text-sm font-semibold text-n-slate-12 break-words"

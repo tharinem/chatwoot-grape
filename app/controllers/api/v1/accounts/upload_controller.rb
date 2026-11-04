@@ -59,7 +59,13 @@ class Api::V1::Accounts::UploadController < Api::V1::Accounts::BaseController
   end
 
   def render_success(file_blob)
-    render json: { file_url: url_for(file_blob), blob_id: file_blob.signed_id }
+    render json: { file_url: url_for(file_blob), blob_id: file_blob.signed_id, public_url: public_url_for(file_blob) }
+  end
+
+  # Serves the bytes directly (no redirect to an expiring service URL), so
+  # external fetchers such as Meta can download it later without auth.
+  def public_url_for(file_blob)
+    Rails.application.routes.url_helpers.rails_storage_proxy_url(file_blob, host: ENV.fetch('FRONTEND_URL', request.base_url))
   end
 
   def render_error(message, status)

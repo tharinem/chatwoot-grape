@@ -16,8 +16,15 @@ class Whatsapp::TemplateCreationService
   end
 
   def perform
-    errors = Whatsapp::TemplateDraftValidator.new(@params.merge(language: language)).errors
+    errors = validation_errors
     return { success: false, error_type: :validation, errors: errors } if errors.any?
+
+    if image_header?
+      upload = header_image_uploader.upload
+      return meta_error_result(upload[:data]) unless upload[:success]
+
+      @header_handle = upload[:handle]
+    end
 
     response = HTTParty.post(templates_url, headers: @channel.api_headers, body: build_payload.to_json, timeout: REQUEST_TIMEOUT)
     process_response(response)
@@ -27,6 +34,24 @@ class Whatsapp::TemplateCreationService
   end
 
   private
+
+  def validation_errors
+    errors = Whatsapp::TemplateDraftValidator.new(@params.merge(language: language)).errors
+    return errors if errors.any? || !image_header?
+
+    header_image_uploader.errors
+  end
+
+  def image_header?
+    @params[:header_format].to_s == 'IMAGE'
+  end
+
+  def header_image_uploader
+    @header_image_uploader ||= Whatsapp::TemplateHeaderImageUploadService.new(
+      channel: @channel, signed_blob_id: @params[:header_image], base_url: graph_base_url,
+      api_version: WHATSAPP_API_VERSION, timeout: REQUEST_TIMEOUT
+    )
+  end
 
   def name
     @params[:name].to_s
@@ -80,6 +105,7 @@ class Whatsapp::TemplateCreationService
   end
 
   def header_component
+    return { type: 'HEADER', format: 'IMAGE', example: { header_handle: [@header_handle] } } if image_header?
     return if header_text.blank?
 
     component = { type: 'HEADER', format: 'TEXT', text: header_text }
@@ -115,9 +141,12 @@ class Whatsapp::TemplateCreationService
 
   # HTTP
 
+  def graph_base_url
+    ENV.fetch('WHATSAPP_CLOUD_BASE_URL', 'https://graph.facebook.com')
+  end
+
   def templates_url
-    base = ENV.fetch('WHATSAPP_CLOUD_BASE_URL', 'https://graph.facebook.com')
-    "#{base}/#{WHATSAPP_API_VERSION}/#{@channel.provider_config['business_account_id']}/message_templates"
+    "#{graph_base_url}/#{WHATSAPP_API_VERSION}/#{@channel.provider_config['business_account_id']}/message_templates"
   end
 
   # Success is decided by the HTTP status only: a 2xx means Meta accepted the
@@ -155,7 +184,7 @@ class Whatsapp::TemplateCreationService
 
   def meta_error_result(data)
     error = data['error'].is_a?(Hash) ? data['error'] : {}
-    Rails.logger.warn "[WHATSAPP TEMPLATE] Template creation rejected: code=#{error['code']} subcode=#{error['error_subcode']}"
+    Rails.logger.warn "[WHATSAPP TEMPLATE] Meta rejected the request: code=#{error['code']} subcode=#{error['error_subcode']}"
     return request_failed_result if error.empty?
 
     {
