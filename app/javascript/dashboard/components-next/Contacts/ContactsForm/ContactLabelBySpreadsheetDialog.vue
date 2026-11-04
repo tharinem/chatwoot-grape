@@ -155,12 +155,21 @@ defineExpose({ dialogRef, open });
   >
     <div v-if="!result" class="flex flex-col gap-4">
       <div class="flex items-center justify-between gap-2">
-        <span class="text-sm truncate text-n-slate-12">
-          {{
-            fileName ||
-            t('CONTACTS_LAYOUT.HEADER.ACTIONS.LABEL_BY_SPREADSHEET.NO_FILE')
-          }}
-        </span>
+        <div class="flex flex-col min-w-0">
+          <span class="text-sm truncate text-n-slate-12">
+            {{
+              fileName ||
+              t('CONTACTS_LAYOUT.HEADER.ACTIONS.LABEL_BY_SPREADSHEET.NO_FILE')
+            }}
+          </span>
+          <span class="text-xs text-n-slate-11" data-test-id="formats-hint">
+            {{
+              t(
+                'CONTACTS_LAYOUT.HEADER.ACTIONS.LABEL_BY_SPREADSHEET.FORMATS_HINT'
+              )
+            }}
+          </span>
+        </div>
         <Button
           :label="
             fileName
@@ -307,7 +316,7 @@ defineExpose({ dialogRef, open });
     <input
       ref="fileInput"
       type="file"
-      accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+      accept=".xlsx,.xls,.ods,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/vnd.oasis.opendocument.spreadsheet,text/csv"
       class="hidden"
       data-test-id="file-input"
       @change="handleFileChange"

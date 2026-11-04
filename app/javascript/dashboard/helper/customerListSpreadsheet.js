@@ -388,13 +388,34 @@ const readAsArrayBuffer = file =>
         reader.readAsArrayBuffer(file);
       });
 
-/** Reads a File (.xlsx or .csv) and returns the customers found in it. */
+// Legacy Excel (.xls, BIFF/CDFV2) and OpenDocument (.ods) go through SheetJS,
+// loaded on demand so it never weighs on the main bundle.
+export const parseWithSheetJs = async buffer => {
+  const XLSX = await import('xlsx');
+  const workbook = XLSX.read(new Uint8Array(buffer), {
+    type: 'array',
+    cellDates: false,
+    dense: true,
+  });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  if (!sheet) throw new Error('INVALID_FILE');
+  return XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: true,
+    defval: '',
+    blankrows: false,
+  });
+};
+
+/** Reads a File (.xlsx, .xls, .ods or .csv) and returns the customers found in it. */
 export const readCustomerList = async file => {
   const name = (file.name || '').toLowerCase();
   const buffer = await readAsArrayBuffer(file);
   let rows;
   if (name.endsWith('.xlsx')) {
     rows = await parseXlsx(buffer);
+  } else if (name.endsWith('.xls') || name.endsWith('.ods')) {
+    rows = await parseWithSheetJs(buffer);
   } else if (name.endsWith('.csv') || name.endsWith('.txt')) {
     rows = parseCsv(decodeText(buffer));
   } else {

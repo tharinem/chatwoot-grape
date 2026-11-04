@@ -336,8 +336,9 @@
         "LABEL_BY_SPREADSHEET": {
           "BUTTON": "Label from spreadsheet",
           "TITLE": "Label contacts from a spreadsheet",
-          "DESCRIPTION": "Upload the customer list exported from your system (.xlsx or .csv). Contacts are found by customer code (codigo_cliente attribute) or by phone, and receive the label you choose. Names and documents are not sent.",
+          "DESCRIPTION": "Upload the customer list exported from your system. Contacts are found by customer code (codigo_cliente attribute) or by phone, and receive the label you choose. Names and documents are not sent.",
           "NO_FILE": "No file selected",
+          "FORMATS_HINT": "Spreadsheet .xlsx, .xls, .ods or .csv",
           "CHOOSE_FILE": "Choose file",
           "CHANGE_FILE": "Change file",
           "PREVIEW": "{total} customers read ({withCode} with code, {phoneOnly} with phone only).",
@@ -349,7 +350,7 @@
           "CLOSE": "Close",
           "ERRORS": {
             "NO_ROWS": "No customer code or phone was found in this file.",
-            "UNSUPPORTED_FORMAT": "Unsupported format. Save the spreadsheet as .xlsx or .csv and try again.",
+            "UNSUPPORTED_FORMAT": "Unsupported format. Use a .xlsx, .xls, .ods or .csv spreadsheet.",
             "READ_FAILED": "Could not read this file. Save it as .xlsx or .csv and try again.",
             "API": "Could not apply the label. Please try again."
           },

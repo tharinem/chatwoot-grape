@@ -154,8 +154,24 @@ describe('customerListSpreadsheet', () => {
       expect(result.customers).toHaveLength(3);
     });
 
+    it.each([
+      ['legacy Excel .xls (BIFF/CDFV2)', 'erp-clientes-legado.xls'],
+      ['OpenDocument .ods', 'erp-clientes.ods'],
+    ])('handles %s through SheetJS', async (_, name) => {
+      const result = await readCustomerList(fakeFile(name, fixture(name)));
+
+      expect(result.codeColumn).toBe(0);
+      expect(result.phoneColumns).toEqual([5, 6]);
+      expect(result.customers).toEqual([
+        { code: '2001', phones: ['48998760001'] },
+        { code: '2002', phones: ['4833330002', '48999990003'] },
+        { code: '2003', phones: [] },
+      ]);
+      expect(JSON.stringify(result)).not.toContain('Ficticio');
+    });
+
     it('rejects other formats', async () => {
-      await expect(readCustomerList(fakeFile('lista.xls', ''))).rejects.toThrow(
+      await expect(readCustomerList(fakeFile('lista.pdf', ''))).rejects.toThrow(
         'UNSUPPORTED_FORMAT'
       );
     });

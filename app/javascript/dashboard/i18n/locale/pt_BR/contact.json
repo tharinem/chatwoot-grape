@@ -335,8 +335,9 @@
         "LABEL_BY_SPREADSHEET": {
           "BUTTON": "Etiquetar por planilha",
           "TITLE": "Etiquetar contatos por planilha",
-          "DESCRIPTION": "Envie a lista de clientes exportada do seu sistema (.xlsx ou .csv). Os contatos são encontrados pelo código do cliente (atributo codigo_cliente) ou pelo telefone e recebem a etiqueta que você escolher. Nomes e documentos não são enviados.",
+          "DESCRIPTION": "Envie a lista de clientes exportada do seu sistema. Os contatos são encontrados pelo código do cliente (atributo codigo_cliente) ou pelo telefone e recebem a etiqueta que você escolher. Nomes e documentos não são enviados.",
           "NO_FILE": "Nenhum arquivo selecionado",
+          "FORMATS_HINT": "Planilha .xlsx, .xls, .ods ou .csv",
           "CHOOSE_FILE": "Escolher arquivo",
           "CHANGE_FILE": "Trocar arquivo",
           "PREVIEW": "{total} clientes lidos ({withCode} com código, {phoneOnly} só com telefone).",
@@ -348,7 +349,7 @@
           "CLOSE": "Fechar",
           "ERRORS": {
             "NO_ROWS": "Não encontramos código de cliente nem telefone neste arquivo.",
-            "UNSUPPORTED_FORMAT": "Formato não suportado. Salve a planilha como .xlsx ou .csv e tente de novo.",
+            "UNSUPPORTED_FORMAT": "Formato não suportado. Use uma planilha .xlsx, .xls, .ods ou .csv.",
             "READ_FAILED": "Não foi possível ler este arquivo. Salve como .xlsx ou .csv e tente de novo.",
             "API": "Não foi possível aplicar a etiqueta. Tente de novo."
           },
