@@ -57,6 +57,11 @@ class ContactAPI extends ApiClient {
     return axios.post(`${this.url}/${contactId}/labels`, { labels });
   }
 
+  // payload: { label, rows: [{ code, phones }] } (codes and phones only)
+  bulkLabelByCodes(payload) {
+    return axios.post(`${this.url}/bulk_label_by_codes`, payload);
+  }
+
   search(search = '', page = 1, sortAttr = 'name', label = '', options = {}) {
     let requestURL = `${this.url}/search?${buildContactParams(
       page,
