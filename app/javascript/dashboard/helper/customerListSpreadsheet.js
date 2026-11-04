@@ -4,15 +4,21 @@
 // leave the browser (LGPD).
 
 const HEADER_SCAN_LIMIT = 30;
-const SAMPLE_SIZE = 50;
+// Headerless sheets: scan many rows, since phones can be sparse at the top.
+const DETECTION_ROWS = 5000;
+// A column is a phone column when at least this share of its filled cells are
+// 10-13 digit numbers (real ERP columns mix phones with short fragments).
+const PHONE_COLUMN_MIN_SHARE = 0.2;
+const DOCUMENT_COLUMN_MAX_SHARE = 0.5;
 const CODE_REGEX = /^\d{1,9}(\.0+)?$/;
 const PHONE_MIN_DIGITS = 8;
+const PHONE_STRICT_MIN_DIGITS = 10;
 const PHONE_MAX_DIGITS = 13;
 
 export const normalizeHeader = value =>
   String(value ?? '')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
@@ -31,13 +37,14 @@ export const normalizeCode = value => {
 
 const isCode = value => CODE_REGEX.test(toText(value));
 
-export const extractPhones = value =>
+// minDigits = 8 under an explicit phone header; 10 (DDD + number) in
+// headerless sheets, where short fragments are noise.
+export const extractPhones = (value, minDigits = PHONE_MIN_DIGITS) =>
   toText(value)
     .split(/[/;,|]| e /)
     .map(part => part.replace(/\D/g, ''))
     .filter(
-      digits =>
-        digits.length >= PHONE_MIN_DIGITS && digits.length <= PHONE_MAX_DIGITS
+      digits => digits.length >= minDigits && digits.length <= PHONE_MAX_DIGITS
     );
 
 const isCpf = digits => {
@@ -56,24 +63,39 @@ const isCpf = digits => {
   return check(9) && check(10);
 };
 
-const looksLikePhone = value => {
+// CPF/CNPJ: formatted (123.456.789-00, 12.345.678/0001-90), 14 digits or a valid CPF.
+const isDocument = value => {
   const text = toText(value);
-  // Documents usually keep their punctuation (123.456.789-00, 12.345.678/0001-90)
   if (/^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{2}\.\d{3}\.\d{3}\//.test(text)) {
-    return false;
+    return true;
   }
   const digits = text.replace(/\D/g, '');
-  return digits.length >= 10 && digits.length <= 13 && !isCpf(digits);
+  return digits.length === 14 || isCpf(digits);
 };
 
-const majority = (values, predicate) => {
-  const filled = values.filter(value => toText(value) !== '');
-  if (!filled.length) return false;
-  return filled.filter(predicate).length / filled.length >= 0.6;
+const looksLikePhone = value => {
+  if (isDocument(value)) return false;
+  const digits = toText(value).replace(/\D/g, '');
+  return (
+    digits.length >= PHONE_STRICT_MIN_DIGITS &&
+    digits.length <= PHONE_MAX_DIGITS
+  );
 };
+
+const share = (values, predicate) => {
+  const filled = values.filter(value => toText(value) !== '');
+  if (!filled.length) return 0;
+  return filled.filter(predicate).length / filled.length;
+};
+
+const majority = (values, predicate) => share(values, predicate) >= 0.6;
 
 const columnValues = (rows, index) =>
-  rows.slice(0, SAMPLE_SIZE).map(row => row[index]);
+  rows.slice(0, DETECTION_ROWS).map(row => row[index]);
+
+const isPhoneColumn = values =>
+  share(values, looksLikePhone) >= PHONE_COLUMN_MIN_SHARE &&
+  share(values, isDocument) < DOCUMENT_COLUMN_MAX_SHARE;
 
 const HEADER_CODE = /^(cod|codigo)( (do )?cliente)?$|^codigo$/;
 // Short header cells only, so a title row like "Fone: (11) 3333-4444" is not taken as the header.
@@ -96,18 +118,21 @@ const findHeader = rows => {
 };
 
 const detectColumns = rows => {
-  const width = Math.max(0, ...rows.slice(0, SAMPLE_SIZE).map(r => r.length));
+  const width = Math.max(
+    0,
+    ...rows.slice(0, DETECTION_ROWS).map(r => r.length)
+  );
   let codeColumn = -1;
   const phoneColumns = [];
   for (let column = 0; column < width; column += 1) {
     const values = columnValues(rows, column);
     if (codeColumn < 0 && majority(values, isCode)) {
       codeColumn = column;
-    } else if (majority(values, looksLikePhone)) {
+    } else if (isPhoneColumn(values)) {
       phoneColumns.push(column);
     }
   }
-  return { codeColumn, phoneColumns };
+  return { codeColumn, phoneColumns, strictPhones: true };
 };
 
 /**
@@ -120,7 +145,10 @@ export const extractCustomerRows = rawRows => {
   const header = findHeader(rows);
   const dataRows = header ? rows.slice(header.index + 1) : rows;
   const columns = header || detectColumns(dataRows);
-  const { codeColumn, phoneColumns } = columns;
+  const { codeColumn, phoneColumns, strictPhones } = columns;
+  const minPhoneDigits = strictPhones
+    ? PHONE_STRICT_MIN_DIGITS
+    : PHONE_MIN_DIGITS;
 
   const customers = [];
   const seen = new Set();
@@ -131,7 +159,11 @@ export const extractCustomerRows = rawRows => {
 
     const code = hasCodeColumn ? normalizeCode(row[codeColumn]) : '';
     const phones = [
-      ...new Set(phoneColumns.flatMap(column => extractPhones(row[column]))),
+      ...new Set(
+        phoneColumns
+          .filter(column => !(strictPhones && isDocument(row[column])))
+          .flatMap(column => extractPhones(row[column], minPhoneDigits))
+      ),
     ];
     if (!code && !phones.length) return;
 
@@ -374,7 +406,7 @@ export const readCustomerList = async file => {
 export const slugifyLabel = value =>
   String(value ?? '')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9_]+/g, '-')
     .replace(/^-+|-+$/g, '');

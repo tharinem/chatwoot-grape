@@ -74,6 +74,27 @@ describe('customerListSpreadsheet', () => {
       ]);
     });
 
+    it('detects sparse phone columns mixed with fragments in a headerless sheet', async () => {
+      // Shaped like the real "LDN" export: phones spread over columns 4, 6 and 7,
+      // mixed with 1/2/4/9 digit fragments, next to a CPF/CNPJ column.
+      const rows = await parseXlsx(
+        fixture('sem-cabecalho-telefones-esparsos.xlsx')
+      );
+      const result = extractCustomerRows(rows);
+
+      expect(result.codeColumn).toBe(0);
+      expect(result.phoneColumns).toEqual([4, 6, 7]);
+      expect(result.customers).toHaveLength(60);
+      const withPhone = result.customers.filter(c => c.phones.length);
+      expect(withPhone).toHaveLength(40);
+      result.customers
+        .flatMap(c => c.phones)
+        .forEach(phone => {
+          expect(phone.length).toBeGreaterThanOrEqual(10);
+          expect(phone.length).toBeLessThanOrEqual(13);
+        });
+    });
+
     it('never returns names or documents', async () => {
       const rows = await parseXlsx(fixture('erp-clientes-simples.xlsx'));
       const serialized = JSON.stringify(extractCustomerRows(rows).customers);
