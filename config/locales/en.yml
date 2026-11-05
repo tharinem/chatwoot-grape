@@ -75,6 +75,8 @@ en:
     contacts:
       import:
         failed: File is blank
+      bulk_label:
+        blank_label: Label name is required
       export:
         success: We will notify you once contacts export file is ready to view.
       email:

@@ -332,6 +332,37 @@
           "SUCCESS_MESSAGE": "Você será notificado por e-mail quando a importação estiver concluída.",
           "ERROR_MESSAGE": "Ocorreu um erro, por favor tente novamente"
         },
+        "LABEL_BY_SPREADSHEET": {
+          "BUTTON": "Etiquetar por planilha",
+          "TITLE": "Etiquetar contatos por planilha",
+          "DESCRIPTION": "Envie a lista de clientes exportada do seu sistema. Os contatos são encontrados pelo código do cliente (atributo codigo_cliente) ou pelo telefone e recebem a etiqueta que você escolher. Nomes e documentos não são enviados.",
+          "NO_FILE": "Nenhum arquivo selecionado",
+          "FORMATS_HINT": "Planilha .xlsx, .xls, .ods ou .csv",
+          "CHOOSE_FILE": "Escolher arquivo",
+          "CHANGE_FILE": "Trocar arquivo",
+          "PREVIEW": "{total} clientes lidos ({withCode} com código, {phoneOnly} só com telefone).",
+          "LABEL_NAME": "Etiqueta",
+          "LABEL_PLACEHOLDER": "ex.: lista-da-semana",
+          "LABEL_EXISTING": "Etiqueta existente: {label}",
+          "LABEL_NEW": "Uma etiqueta nova será criada: {label}",
+          "APPLY": "Aplicar",
+          "CLOSE": "Fechar",
+          "ERRORS": {
+            "NO_ROWS": "Não encontramos código de cliente nem telefone neste arquivo.",
+            "UNSUPPORTED_FORMAT": "Formato não suportado. Use uma planilha .xlsx, .xls, .ods ou .csv.",
+            "READ_FAILED": "Não foi possível ler este arquivo. Salve como .xlsx ou .csv e tente de novo.",
+            "API": "Não foi possível aplicar a etiqueta. Tente de novo."
+          },
+          "RESULT": {
+            "SUMMARY": "{matched} de {received} clientes encontrados. Etiqueta: {label}",
+            "LABELED": "Contatos etiquetados agora: {count}",
+            "QUEUED": "Contatos que vão receber a etiqueta em segundo plano: {count}",
+            "ALREADY_LABELED": "Contatos que já tinham a etiqueta: {count}",
+            "NOT_FOUND": "Clientes não encontrados: {count}",
+            "DOWNLOAD_NOT_FOUND": "Baixar não encontrados (.csv)",
+            "CAMPAIGN_HINT": "Para mandar uma campanha para esta lista, escolha a etiqueta {label} como público."
+          }
+        },
         "EXPORT_CONTACT": {
           "TITLE": "Exportar contatos",
           "DESCRIPTION": "Exporte rapidamente um arquivo CSV com detalhes completos dos seus contatos",

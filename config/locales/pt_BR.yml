@@ -61,6 +61,8 @@ pt_BR:
     contacts:
       import:
         failed: Arquivo vazio
+      bulk_label:
+        blank_label: Informe o nome da etiqueta
       export:
         success: Avisaremos você assim que a exportação de arquivos estiver pronta para ser exibida.
       email:

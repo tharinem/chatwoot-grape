@@ -15,6 +15,10 @@ class ContactPolicy < ApplicationPolicy
     @account_user.administrator?
   end
 
+  def bulk_label_by_codes?
+    @account_user.administrator?
+  end
+
   def search?
     true
   end

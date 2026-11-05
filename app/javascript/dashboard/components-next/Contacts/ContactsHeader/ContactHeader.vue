@@ -5,6 +5,7 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ContactSortMenu from './components/ContactSortMenu.vue';
 import ContactMoreActions from './components/ContactMoreActions.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 defineProps({
   showSearch: { type: Boolean, default: true },
@@ -28,7 +29,10 @@ const emit = defineEmits([
   'export',
   'createSegment',
   'deleteSegment',
+  'labelBySpreadsheet',
 ]);
+
+const { isAdmin } = useAdmin();
 </script>
 
 <template>
@@ -105,6 +109,18 @@ const emit = defineEmits([
               :active-sort="activeSort"
               :active-ordering="activeOrdering"
               @update:sort="emit('update:sort', $event)"
+            />
+            <Button
+              v-if="isAdmin"
+              :label="
+                $t('CONTACTS_LAYOUT.HEADER.ACTIONS.LABEL_BY_SPREADSHEET.BUTTON')
+              "
+              icon="i-lucide-tags"
+              color="slate"
+              size="sm"
+              variant="ghost"
+              data-test-id="label-by-spreadsheet-button"
+              @click="emit('labelBySpreadsheet')"
             />
             <ContactMoreActions
               @add="emit('add')"

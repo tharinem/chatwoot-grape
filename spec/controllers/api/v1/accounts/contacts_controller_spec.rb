@@ -216,6 +216,123 @@ RSpec.describe 'Contacts API', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/{account.id}/contacts/bulk_label_by_codes' do
+    let(:path) { "/api/v1/accounts/#{account.id}/contacts/bulk_label_by_codes" }
+    let(:admin) { create(:user, account: account, role: :administrator) }
+
+    def bulk_label(params, user = admin)
+      post path, headers: user.create_new_auth_token, params: params, as: :json
+    end
+
+    context 'when it is an unauthenticated user' do
+      it 'returns unauthorized' do
+        post path, params: { label: 'semana' }, as: :json
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context 'when it is an agent' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      it 'returns unauthorized and does not label anyone' do
+        contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '1234' })
+        bulk_label({ label: 'semana', rows: [{ code: '1234' }] }, agent)
+
+        expect(response).to have_http_status(:unauthorized)
+        expect(contact.reload.label_list).to be_empty
+      end
+    end
+
+    context 'when it is an administrator' do
+      it 'labels contacts matched by customer code, creating the label and keeping existing labels' do
+        contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '1234' })
+        contact.update_labels(%w[vip])
+        numeric_code = create(:contact, account: account, custom_attributes: { codigo_cliente: 77 })
+        bulk_label(label: 'Lista da Semana', rows: [{ code: '1234.0' }, { code: '0077' }, { code: '999' }])
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to include('label' => 'lista-da-semana', 'received' => 3, 'matched' => 2,
+                                                'labeled' => 2, 'not_found' => 1, 'not_found_codes' => ['999'])
+        expect(account.labels.pluck(:title)).to include('lista-da-semana')
+        expect(contact.reload.label_list).to contain_exactly('vip', 'lista-da-semana')
+        expect(numeric_code.reload.label_list).to eq(['lista-da-semana'])
+      end
+
+      it 'falls back to phone (last 8 digits) with or without country code and the extra 9' do
+        with_nine = create(:contact, account: account, phone_number: '+5511987654321')
+        without_nine = create(:contact, account: account, phone_number: '+554733334444')
+        untouched = create(:contact, account: account, phone_number: '+5511900001111')
+        bulk_label(label: 'semana', rows: [
+                     { code: '5', phones: ['(11) 98765-4321'] },
+                     { phones: ['47 9 3333-4444'] },
+                     { code: '6', phones: ['1122223333'] }
+                   ])
+
+        expect(response.parsed_body).to include('matched' => 2, 'not_found' => 1, 'not_found_codes' => ['6'])
+        expect(with_nine.reload.label_list).to eq(['semana'])
+        expect(without_nine.reload.label_list).to eq(['semana'])
+        expect(untouched.reload.label_list).to be_empty
+      end
+
+      it 'prefers the customer code over the phone and disambiguates phones by area code' do
+        by_code = create(:contact, account: account, custom_attributes: { 'codigo_cliente' => '10' }, phone_number: '+5521911112222')
+        same_suffix_sp = create(:contact, account: account, phone_number: '+5511955556666')
+        same_suffix_rj = create(:contact, account: account, phone_number: '+5521955556666')
+        bulk_label(label: 'semana', rows: [{ code: '10', phones: ['11 95555-6666'] }, { phones: ['21955556666'] }])
+
+        expect(by_code.reload.label_list).to eq(['semana'])
+        expect(same_suffix_sp.reload.label_list).to be_empty
+        expect(same_suffix_rj.reload.label_list).to eq(['semana'])
+      end
+
+      it 'accepts plain codes and phones arrays' do
+        contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '42' })
+        by_phone = create(:contact, account: account, phone_number: '+5548999998888')
+        bulk_label(label: 'semana', codes: ['42'], phones: ['48 99999-8888'])
+
+        expect(response.parsed_body).to include('received' => 2, 'matched' => 2)
+        expect(contact.reload.label_list).to eq(['semana'])
+        expect(by_phone.reload.label_list).to eq(['semana'])
+      end
+
+      it 'does not touch contacts from another account' do
+        other_contact = create(:contact, account: create(:account), custom_attributes: { codigo_cliente: '1234' },
+                                         phone_number: '+5511987654321')
+        bulk_label(label: 'semana', rows: [{ code: '1234', phones: ['11987654321'] }])
+
+        expect(response.parsed_body).to include('matched' => 0, 'not_found' => 1)
+        expect(other_contact.reload.label_list).to be_empty
+      end
+
+      it 'counts contacts that already have the label without relabeling them' do
+        contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '1' })
+        contact.update_labels(%w[semana])
+        bulk_label(label: 'semana', rows: [{ code: '1' }])
+
+        expect(response.parsed_body).to include('matched' => 1, 'labeled' => 0, 'already_labeled' => 1)
+      end
+
+      it 'enqueues a background job above the async threshold' do
+        stub_const('Contacts::BulkLabelByCodesService::ASYNC_THRESHOLD', 1)
+        contacts = create_list(:contact, 2, account: account).each_with_index do |contact, index|
+          contact.update!(custom_attributes: { codigo_cliente: (index + 100).to_s })
+        end
+
+        expect { bulk_label(label: 'semana', rows: [{ code: '100' }, { code: '101' }]) }
+          .to have_enqueued_job(Contacts::BulkActionJob)
+          .with(account.id, admin.id, { ids: contacts.map(&:id), labels: { add: ['semana'] } })
+        expect(response.parsed_body).to include('matched' => 2, 'labeled' => 0, 'queued' => 2)
+      end
+
+      it 'rejects a blank label' do
+        bulk_label(label: ' ', rows: [{ code: '1' }])
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+  end
+
   describe 'POST /api/v1/accounts/{account.id}/contacts/export' do
     context 'when it is an unauthenticated user' do
       it 'returns unauthorized' do

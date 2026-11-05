@@ -178,6 +178,7 @@ Rails.application.routes.draw do
               post :filter
               post :import
               post :export
+              post :bulk_label_by_codes, to: 'contacts/bulk_labels#create'
             end
             member do
               get :contactable_inboxes

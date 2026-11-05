@@ -65,6 +65,15 @@ describe('#ContactsAPI', () => {
       });
     });
 
+    it('#bulkLabelByCodes', () => {
+      const payload = { label: 'semana', rows: [{ code: '1', phones: [] }] };
+      contactAPI.bulkLabelByCodes(payload);
+      expect(axiosMock.post).toHaveBeenCalledWith(
+        '/api/v1/contacts/bulk_label_by_codes',
+        payload
+      );
+    });
+
     it('#search', () => {
       contactAPI.search('leads', 1, 'date', 'customer-support');
       expect(axiosMock.get).toHaveBeenCalledWith(
