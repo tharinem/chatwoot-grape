@@ -41,7 +41,12 @@
       "COUPON_CODE": "Digite o código do cupom (máx. 15 caracteres)",
       "MEDIA_URL_LABEL": "Digite a URL {type}",
       "DOCUMENT_NAME_PLACEHOLDER": "Informe o nome do arquivo do documento (ex.: Comprovante_2025.pdf)",
-      "BUTTON_PARAMETER": "Insira o parâmetro do botão"
+      "BUTTON_PARAMETER": "Insira o parâmetro do botão",
+      "UPLOAD_IMAGE": "Enviar imagem",
+      "UPLOADING_IMAGE": "Aguarde o envio",
+      "UPLOAD_IMAGE_ERROR": "Não foi possível enviar a imagem. Tente de novo ou cole um link público.",
+      "UPLOAD_IMAGE_INVALID_TYPE": "Use uma imagem JPG ou PNG.",
+      "UPLOAD_IMAGE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB."
     },
     "MANAGE": {
       "TITLE": "Modelos de mensagem",
@@ -88,7 +93,14 @@
         "HEADER": {
           "LABEL": "Cabeçalho (opcional)",
           "PLACEHOLDER": "Título curto, até 60 caracteres",
-          "EXAMPLE": "Exemplo para a variável do cabeçalho"
+          "EXAMPLE": "Exemplo para a variável do cabeçalho",
+          "FORMAT_LABEL": "Tipo de cabeçalho",
+          "FORMAT_TEXT": "Texto",
+          "FORMAT_IMAGE": "Imagem",
+          "IMAGE_LABEL": "Imagem do cabeçalho",
+          "IMAGE_BUTTON": "Escolher imagem",
+          "IMAGE_UPLOADING": "Aguarde o envio",
+          "IMAGE_HELP": "JPG ou PNG de até 5 MB. A Meta usa esta imagem como exemplo na aprovação. Cada campanha pode mandar uma imagem diferente."
         },
         "BODY": {
           "LABEL": "Texto",
@@ -140,7 +152,11 @@
         "MIXED_TYPES": "Não misture respostas rápidas com botão de link.",
         "INVALID_TYPE": "Tipo de botão não suportado.",
         "TOO_MANY": "Botões demais.",
-        "INVALID_URL": "Use um link https completo. Variável só como {'{{'}1{'}}'} no final."
+        "INVALID_URL": "Use um link https completo. Variável só como {'{{'}1{'}}'} no final.",
+        "INVALID_FILE_TYPE": "Use uma imagem JPG ou PNG.",
+        "FILE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB.",
+        "APP_ID_MISSING": "Cabeçalho com imagem precisa do ID do app da Meta (WHATSAPP_APP_ID) configurado nesta instalação. Fale com o administrador.",
+        "UPLOAD_FAILED": "Não foi possível enviar a imagem. Tente de novo."
       }
     }
   }

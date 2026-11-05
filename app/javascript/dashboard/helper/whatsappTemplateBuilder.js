@@ -12,6 +12,13 @@ export const TEMPLATE_LIMITS = {
 
 export const ALLOWED_CATEGORIES = ['MARKETING', 'UTILITY'];
 export const BUTTON_TYPES = { QUICK_REPLY: 'QUICK_REPLY', URL: 'URL' };
+export const HEADER_FORMATS = { TEXT: 'TEXT', IMAGE: 'IMAGE' };
+// Meta limits for an IMAGE header (mirrors TemplateHeaderImageUploadService)
+export const HEADER_IMAGE = {
+  MAX_SIZE: 5 * 1024 * 1024,
+  TYPES: ['image/jpeg', 'image/png'],
+  ACCEPT: 'image/jpeg,image/png',
+};
 export const DEFAULT_TEMPLATE_LANGUAGE = 'pt_BR';
 
 const NAME_FORMAT = /^[a-z0-9_]{1,512}$/;
@@ -75,7 +82,24 @@ const validateBody = (draft, errors) => {
   }
 };
 
+// Returns the error code for a header image file, or null when it is valid
+export const validateHeaderImageFile = file => {
+  if (!file || !HEADER_IMAGE.TYPES.includes(file.type)) {
+    return 'invalid_file_type';
+  }
+  if (file.size > HEADER_IMAGE.MAX_SIZE) return 'file_too_large';
+  return null;
+};
+
+const isImageHeader = draft => draft.headerFormat === HEADER_FORMATS.IMAGE;
+
 const validateHeader = (draft, errors) => {
+  if (isImageHeader(draft)) {
+    if (!asString(draft.headerImage).trim()) {
+      errors.push({ field: 'header_image', code: 'required' });
+    }
+    return;
+  }
   const header = asString(draft.headerText);
   if (!header.trim()) return;
   if (header.length > TEMPLATE_LIMITS.HEADER) {
@@ -184,14 +208,21 @@ const replaceVariables = (text, examples = []) =>
     return example || match;
   });
 
-export const buildPreview = (draft = {}) => ({
-  header: replaceVariables(draft.headerText, [draft.headerExample]),
-  body: replaceVariables(draft.body, draft.bodyExamples),
-  footer: asString(draft.footer),
-  buttons: (draft.buttons || [])
-    .filter(button => asString(button.text).trim())
-    .map(button => ({ type: button.type, text: button.text })),
-});
+export const buildPreview = (draft = {}) => {
+  const preview = {
+    header: isImageHeader(draft)
+      ? ''
+      : replaceVariables(draft.headerText, [draft.headerExample]),
+    body: replaceVariables(draft.body, draft.bodyExamples),
+    footer: asString(draft.footer),
+    buttons: (draft.buttons || [])
+      .filter(button => asString(button.text).trim())
+      .map(button => ({ type: button.type, text: button.text })),
+  };
+  if (isImageHeader(draft))
+    preview.headerImage = asString(draft.headerImageUrl);
+  return preview;
+};
 
 export const buildTemplatePayload = (draft = {}) => {
   const payload = {
@@ -203,7 +234,10 @@ export const buildTemplatePayload = (draft = {}) => {
   if (extractVariables(draft.body).length) {
     payload.body_examples = (draft.bodyExamples || []).map(asString);
   }
-  if (asString(draft.headerText).trim()) {
+  if (isImageHeader(draft)) {
+    payload.header_format = HEADER_FORMATS.IMAGE;
+    payload.header_image = asString(draft.headerImage);
+  } else if (asString(draft.headerText).trim()) {
     payload.header_text = asString(draft.headerText);
     if (extractVariables(draft.headerText).length) {
       payload.header_example = asString(draft.headerExample);

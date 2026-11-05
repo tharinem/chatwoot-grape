@@ -19,6 +19,7 @@ describe('Upload Helpers', () => {
           file_url: 'https://example.com/fileUrl',
           blob_key: 'blobKey123',
           blob_id: 'blobId456',
+          public_url: 'https://example.com/rails/active_storage/blobs/proxy/x',
         },
       };
 
@@ -36,6 +37,7 @@ describe('Upload Helpers', () => {
         fileUrl: 'https://example.com/fileUrl',
         blobKey: 'blobKey123',
         blobId: 'blobId456',
+        publicUrl: 'https://example.com/rails/active_storage/blobs/proxy/x',
       });
     });
 

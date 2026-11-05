@@ -41,6 +41,8 @@ export async function uploadFile(file, accountId) {
     fileUrl: data.file_url,
     blobKey: data.blob_key,
     blobId: data.blob_id,
+    // Direct, non-expiring URL that external services (e.g. Meta) can fetch
+    publicUrl: data.public_url,
   };
 }
 

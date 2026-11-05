@@ -41,7 +41,12 @@
       "COUPON_CODE": "Enter coupon code (max 15 chars)",
       "MEDIA_URL_LABEL": "Enter {type} URL",
       "DOCUMENT_NAME_PLACEHOLDER": "Enter document filename (e.g., Invoice_2025.pdf)",
-      "BUTTON_PARAMETER": "Enter button parameter"
+      "BUTTON_PARAMETER": "Enter button parameter",
+      "UPLOAD_IMAGE": "Upload image",
+      "UPLOADING_IMAGE": "Uploading image",
+      "UPLOAD_IMAGE_ERROR": "Could not upload the image. Try again or paste a public link.",
+      "UPLOAD_IMAGE_INVALID_TYPE": "Use a JPG or PNG image.",
+      "UPLOAD_IMAGE_TOO_LARGE": "The image must be at most 5 MB."
     },
     "MANAGE": {
       "TITLE": "Message templates",
@@ -88,7 +93,14 @@
         "HEADER": {
           "LABEL": "Header (optional)",
           "PLACEHOLDER": "Short title, up to 60 characters",
-          "EXAMPLE": "Example for the header variable"
+          "EXAMPLE": "Example for the header variable",
+          "FORMAT_LABEL": "Header type",
+          "FORMAT_TEXT": "Text",
+          "FORMAT_IMAGE": "Image",
+          "IMAGE_LABEL": "Header image",
+          "IMAGE_BUTTON": "Choose image",
+          "IMAGE_UPLOADING": "Uploading image",
+          "IMAGE_HELP": "JPG or PNG up to 5 MB. Meta uses this image as the approval sample; each campaign can send a different image."
         },
         "BODY": {
           "LABEL": "Text",
@@ -140,7 +152,11 @@
         "MIXED_TYPES": "Do not mix quick replies and link buttons.",
         "INVALID_TYPE": "Unsupported button type.",
         "TOO_MANY": "Too many buttons.",
-        "INVALID_URL": "Use a full https link. A variable is only allowed as {'{{'}1{'}}'} at the end."
+        "INVALID_URL": "Use a full https link. A variable is only allowed as {'{{'}1{'}}'} at the end.",
+        "INVALID_FILE_TYPE": "Use a JPG or PNG image.",
+        "FILE_TOO_LARGE": "The image must be at most 5 MB.",
+        "APP_ID_MISSING": "Image headers need the Meta app ID (WHATSAPP_APP_ID) configured on this installation. Ask the administrator.",
+        "UPLOAD_FAILED": "Could not upload the image. Try again."
       }
     }
   }

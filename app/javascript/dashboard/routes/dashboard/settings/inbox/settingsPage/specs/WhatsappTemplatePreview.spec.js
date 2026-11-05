@@ -75,4 +75,48 @@ describe('WhatsappTemplatePreview', () => {
 
     expect(findText(wrapper, 'preview-header').exists()).toBe(false);
   });
+
+  it('shows the uploaded image of a draft with an image header', () => {
+    const wrapper = mount(WhatsappTemplatePreview, {
+      props: {
+        draft: {
+          headerFormat: 'IMAGE',
+          headerImageUrl: 'https://chat.example.com/promo.png',
+          body: 'Novidades da semana.',
+        },
+      },
+    });
+
+    expect(findText(wrapper, 'preview-header-image').attributes('src')).toBe(
+      'https://chat.example.com/promo.png'
+    );
+  });
+
+  it('shows a placeholder while the image header has no image yet', () => {
+    const wrapper = mount(WhatsappTemplatePreview, {
+      props: { draft: { headerFormat: 'IMAGE', body: 'Oi' } },
+    });
+
+    expect(findText(wrapper, 'preview-header-image-placeholder').exists()).toBe(
+      true
+    );
+  });
+
+  it('shows the sample image of a synced image template', () => {
+    const template = {
+      components: [
+        {
+          type: 'HEADER',
+          format: 'IMAGE',
+          example: { header_handle: ['https://scontent.whatsapp.net/a.png'] },
+        },
+        { type: 'BODY', text: 'Oi' },
+      ],
+    };
+    const wrapper = mount(WhatsappTemplatePreview, { props: { template } });
+
+    expect(findText(wrapper, 'preview-header-image').attributes('src')).toBe(
+      'https://scontent.whatsapp.net/a.png'
+    );
+  });
 });

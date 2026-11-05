@@ -14,6 +14,11 @@ import { requiredIf } from '@vuelidate/validators';
 import { useI18n } from 'vue-i18n';
 
 import Input from 'dashboard/components-next/input/Input.vue';
+import { uploadFile } from 'dashboard/helper/uploadHelper';
+import {
+  HEADER_IMAGE,
+  validateHeaderImageFile,
+} from 'dashboard/helper/whatsappTemplateBuilder';
 import {
   buildTemplateParameters,
   allKeysRequired,
@@ -48,6 +53,8 @@ const emit = defineEmits(['sendMessage', 'resetTemplate', 'back']);
 const { t } = useI18n();
 
 const processedParams = ref({});
+const isUploadingMedia = ref(false);
+const mediaUploadError = ref('');
 
 const languageLabel = computed(() => {
   return `${t('WHATSAPP_TEMPLATES.PARSER.LANGUAGE')}: ${props.template.language || DEFAULT_LANGUAGE}`;
@@ -78,6 +85,11 @@ const formatType = computed(() => {
   return format ? format.charAt(0) + format.slice(1).toLowerCase() : '';
 });
 
+// Only IMAGE headers can be uploaded here; other media keep the URL field
+const isImageTemplate = computed(
+  () => headerComponent.value?.format === 'IMAGE'
+);
+
 const isDocumentTemplate = computed(() => {
   return headerComponent.value?.format?.toLowerCase() === 'document';
 });
@@ -91,6 +103,7 @@ const renderedTemplate = computed(() => {
 });
 
 const isFormInvalid = computed(() => {
+  if (isUploadingMedia.value) return true;
   if (!hasVariables.value && !hasMediaHeader.value) return false;
 
   if (hasMediaHeader.value && !processedParams.value.header?.media_url) {
@@ -163,6 +176,38 @@ const updateMediaUrl = value => {
   processedParams.value.header.media_url = value;
 };
 
+const MEDIA_UPLOAD_ERRORS = {
+  invalid_file_type: () =>
+    t('WHATSAPP_TEMPLATES.PARSER.UPLOAD_IMAGE_INVALID_TYPE'),
+  file_too_large: () => t('WHATSAPP_TEMPLATES.PARSER.UPLOAD_IMAGE_TOO_LARGE'),
+};
+
+const onMediaFileChange = async event => {
+  const input = event.target;
+  const [file] = input.files || [];
+  if (!file) return;
+
+  mediaUploadError.value = '';
+  const code = validateHeaderImageFile(file);
+  if (code) {
+    mediaUploadError.value = MEDIA_UPLOAD_ERRORS[code]();
+    input.value = '';
+    return;
+  }
+
+  isUploadingMedia.value = true;
+  try {
+    const { publicUrl } = await uploadFile(file);
+    if (!publicUrl) throw new Error('missing public url');
+    updateMediaUrl(publicUrl);
+  } catch (error) {
+    mediaUploadError.value = t('WHATSAPP_TEMPLATES.PARSER.UPLOAD_IMAGE_ERROR');
+  } finally {
+    isUploadingMedia.value = false;
+    input.value = '';
+  }
+};
+
 const updateMediaName = value => {
   processedParams.value.header ??= {};
   processedParams.value.header.media_name = value;
@@ -216,6 +261,9 @@ defineExpose({
   v$,
   updateMediaUrl,
   updateMediaName,
+  onMediaFileChange,
+  isUploadingMedia,
+  mediaUploadError,
   sendMessage,
   resetTemplate,
   goBack,
@@ -268,7 +316,34 @@ defineExpose({
             "
             @update:model-value="updateMediaUrl"
           />
+          <label
+            v-if="isImageTemplate"
+            class="ml-2 flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-n-slate-12 outline outline-1 outline-n-weak hover:bg-n-alpha-2"
+            :class="{ 'pointer-events-none opacity-60': isUploadingMedia }"
+            data-test-id="media-upload"
+          >
+            <span class="i-lucide-image-up size-4" />
+            {{
+              isUploadingMedia
+                ? t('WHATSAPP_TEMPLATES.PARSER.UPLOADING_IMAGE')
+                : t('WHATSAPP_TEMPLATES.PARSER.UPLOAD_IMAGE')
+            }}
+            <input
+              type="file"
+              class="hidden"
+              :accept="HEADER_IMAGE.ACCEPT"
+              :disabled="isUploadingMedia"
+              @change="onMediaFileChange"
+            />
+          </label>
         </div>
+        <p
+          v-if="mediaUploadError"
+          class="mb-2.5 text-xs text-n-ruby-9"
+          data-test-id="media-upload-error"
+        >
+          {{ mediaUploadError }}
+        </p>
         <div v-if="isDocumentTemplate" class="flex items-center mb-2.5">
           <Input
             :model-value="processedParams.header?.media_name || ''"

@@ -1,6 +1,7 @@
 class Whatsapp::TemplateDraftValidator
   ALLOWED_CATEGORIES = %w[MARKETING UTILITY].freeze
   ALLOWED_BUTTON_TYPES = %w[QUICK_REPLY URL].freeze
+  ALLOWED_HEADER_FORMATS = %w[TEXT IMAGE].freeze
   NAME_FORMAT = /\A[a-z0-9_]{1,512}\z/
   LANGUAGE_FORMAT = /\A[a-z]{2}(_[A-Z]{2})?\z/
   VARIABLE_PATTERN = /\{\{(\d+)\}\}/
@@ -37,6 +38,7 @@ class Whatsapp::TemplateDraftValidator
   def language = @params[:language].to_s
   def body = @params[:body].to_s
   def body_examples = Array(@params[:body_examples]).map(&:to_s)
+  def header_format = @params[:header_format].presence || 'TEXT'
   def header_text = @params[:header_text].to_s
   def header_example = @params[:header_example].to_s
   def footer = @params[:footer].to_s
@@ -97,6 +99,12 @@ class Whatsapp::TemplateDraftValidator
   end
 
   def validate_header
+    return add_error('header_format', 'invalid_value') unless ALLOWED_HEADER_FORMATS.include?(header_format)
+
+    header_format == 'IMAGE' ? validate_header_image : validate_header_text
+  end
+
+  def validate_header_text
     return if header_text.blank?
     return add_error('header_text', 'too_long') if header_text.length > HEADER_MAX_LENGTH
 
@@ -105,6 +113,12 @@ class Whatsapp::TemplateDraftValidator
     return add_error('header_text', 'too_many_variables') if variables.size > 1 || variables.first != 1
 
     add_error('header_example', 'required') if header_example.blank?
+  end
+
+  # The image itself (type, size) is checked by the creation service, which
+  # resolves the uploaded blob.
+  def validate_header_image
+    add_error('header_image', 'required') if @params[:header_image].to_s.strip.blank?
   end
 
   def validate_footer

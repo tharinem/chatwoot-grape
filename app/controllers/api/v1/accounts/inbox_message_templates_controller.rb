@@ -37,7 +37,7 @@ class Api::V1::Accounts::InboxMessageTemplatesController < Api::V1::Accounts::Ba
     raise ActionController::ParameterMissing, :template unless template.is_a?(ActionController::Parameters)
 
     template.permit(
-      :name, :category, :language, :body, :header_text, :header_example, :footer,
+      :name, :category, :language, :body, :header_format, :header_text, :header_example, :header_image, :footer,
       body_examples: [], buttons: [:type, :text, :url, :example]
     )
   end

@@ -2,9 +2,14 @@ import { mount, flushPromises } from '@vue/test-utils';
 import WhatsappTemplateForm from '../components/WhatsappTemplateForm.vue';
 import WhatsappMessageTemplatesAPI from 'dashboard/api/whatsappMessageTemplates';
 import { useAlert } from 'dashboard/composables';
+import { uploadFile } from 'dashboard/helper/uploadHelper';
 
 vi.mock('dashboard/api/whatsappMessageTemplates', () => ({
   default: { create: vi.fn() },
+}));
+
+vi.mock('dashboard/helper/uploadHelper', () => ({
+  uploadFile: vi.fn(),
 }));
 
 vi.mock('dashboard/composables', () => ({
@@ -253,5 +258,116 @@ describe('WhatsappTemplateForm', () => {
     await buttons[buttons.length - 1].trigger('click');
 
     expect(wrapper.emitted('cancel')).toHaveLength(1);
+  });
+
+  describe('image header', () => {
+    const chooseFile = async (wrapper, file) => {
+      const input = wrapper.find('input[name="header_image_file"]');
+      Object.defineProperty(input.element, 'files', {
+        value: [file],
+        configurable: true,
+      });
+      await input.trigger('change');
+      await flushPromises();
+    };
+
+    const pngFile = (size = 1000) => {
+      const file = new File(['x'], 'promo.png', { type: 'image/png' });
+      Object.defineProperty(file, 'size', { value: size });
+      return file;
+    };
+
+    const selectImageHeader = async wrapper => {
+      await wrapper.find('select[name="header_format"]').setValue('IMAGE');
+    };
+
+    it('swaps the text header for an image picker', async () => {
+      const wrapper = mountForm();
+      expect(wrapper.find('[data-test-id="header-image"]').exists()).toBe(
+        false
+      );
+
+      await selectImageHeader(wrapper);
+
+      expect(wrapper.find('[data-test-id="header-image"]').exists()).toBe(true);
+      expect(wrapper.find('input[name="header_text"]').exists()).toBe(false);
+    });
+
+    it('uploads the image and sends its blob id in the payload', async () => {
+      uploadFile.mockResolvedValue({
+        blobId: 'signed-blob',
+        fileUrl: 'https://chat.example.com/promo.png',
+      });
+      WhatsappMessageTemplatesAPI.create.mockResolvedValue({
+        data: { template: { status: 'PENDING' } },
+      });
+      const wrapper = mountForm();
+      await fillValidDraft(wrapper);
+      await selectImageHeader(wrapper);
+
+      await chooseFile(wrapper, pngFile());
+
+      expect(wrapper.find('[data-test-id="header-image-name"]').text()).toBe(
+        'promo.png'
+      );
+      expect(
+        wrapper.find('[data-test-id="preview-header-image"]').attributes('src')
+      ).toBe('https://chat.example.com/promo.png');
+
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(WhatsappMessageTemplatesAPI.create).toHaveBeenLastCalledWith(
+        7,
+        expect.objectContaining({
+          header_format: 'IMAGE',
+          header_image: 'signed-blob',
+        })
+      );
+    });
+
+    it('rejects files over 5 MB without uploading', async () => {
+      uploadFile.mockClear();
+      const wrapper = mountForm();
+      await selectImageHeader(wrapper);
+
+      await chooseFile(wrapper, pngFile(5 * 1024 * 1024 + 1));
+
+      expect(uploadFile).not.toHaveBeenCalled();
+      expect(wrapper.text()).toContain('The image must be at most 5 MB.');
+    });
+
+    it('blocks submit until an image is uploaded', async () => {
+      WhatsappMessageTemplatesAPI.create.mockClear();
+      const wrapper = mountForm();
+      await fillValidDraft(wrapper);
+      await selectImageHeader(wrapper);
+
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(WhatsappMessageTemplatesAPI.create).not.toHaveBeenCalled();
+      expect(wrapper.find('[data-test-id="header-image"]').text()).toContain(
+        'This field is required.'
+      );
+    });
+
+    it('explains when the Meta app id is not configured', async () => {
+      WhatsappMessageTemplatesAPI.create.mockRejectedValue({
+        response: {
+          data: { errors: [{ field: 'header_image', code: 'app_id_missing' }] },
+        },
+      });
+      uploadFile.mockResolvedValue({ blobId: 'b', fileUrl: 'https://x/y.png' });
+      const wrapper = mountForm();
+      await fillValidDraft(wrapper);
+      await selectImageHeader(wrapper);
+      await chooseFile(wrapper, pngFile());
+
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('WHATSAPP_APP_ID');
+    });
   });
 });

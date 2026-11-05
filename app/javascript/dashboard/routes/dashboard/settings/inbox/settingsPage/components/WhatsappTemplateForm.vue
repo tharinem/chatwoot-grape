@@ -3,9 +3,13 @@ import { reactive, ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import WhatsappMessageTemplatesAPI from 'dashboard/api/whatsappMessageTemplates';
+import { uploadFile } from 'dashboard/helper/uploadHelper';
 import {
   TEMPLATE_LIMITS,
   BUTTON_TYPES,
+  HEADER_FORMATS,
+  HEADER_IMAGE,
+  validateHeaderImageFile,
   DEFAULT_TEMPLATE_LANGUAGE,
   extractVariables,
   validateTemplateDraft,
@@ -29,6 +33,10 @@ const draft = reactive({
   name: '',
   category: 'MARKETING',
   language: DEFAULT_TEMPLATE_LANGUAGE,
+  headerFormat: HEADER_FORMATS.TEXT,
+  // Signed id of the uploaded blob; the backend sends it to Meta
+  headerImage: '',
+  headerImageUrl: '',
   headerText: '',
   headerExample: '',
   body: '',
@@ -42,6 +50,8 @@ const errors = ref([]);
 // { title, message }: title is only set when Meta itself rejected the template
 const requestError = ref(null);
 const isSubmitting = ref(false);
+const isUploadingImage = ref(false);
+const headerImageName = ref('');
 
 const categoryOptions = computed(() => [
   {
@@ -53,6 +63,21 @@ const categoryOptions = computed(() => [
     label: t('WHATSAPP_TEMPLATES.MANAGE.FORM.CATEGORY.UTILITY'),
   },
 ]);
+
+const headerFormatOptions = computed(() => [
+  {
+    value: HEADER_FORMATS.TEXT,
+    label: t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.FORMAT_TEXT'),
+  },
+  {
+    value: HEADER_FORMATS.IMAGE,
+    label: t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.FORMAT_IMAGE'),
+  },
+]);
+
+const isImageHeader = computed(
+  () => draft.headerFormat === HEADER_FORMATS.IMAGE
+);
 
 const buttonTypeOptions = computed(() => [
   { value: '', label: t('WHATSAPP_TEMPLATES.MANAGE.FORM.BUTTONS.NONE') },
@@ -127,6 +152,45 @@ const ERROR_MESSAGES = {
   invalid_type: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.INVALID_TYPE'),
   too_many: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.TOO_MANY'),
   invalid_url: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.INVALID_URL'),
+  invalid_file_type: () =>
+    t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.INVALID_FILE_TYPE'),
+  file_too_large: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.FILE_TOO_LARGE'),
+  app_id_missing: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.APP_ID_MISSING'),
+  upload_failed: () => t('WHATSAPP_TEMPLATES.MANAGE.ERRORS.UPLOAD_FAILED'),
+};
+
+const setHeaderImageError = code => {
+  errors.value = [
+    ...errors.value.filter(item => item.field !== 'header_image'),
+    ...(code ? [{ field: 'header_image', code }] : []),
+  ];
+};
+
+const onHeaderImageChange = async event => {
+  const input = event.target;
+  const [file] = input.files || [];
+  if (!file) return;
+
+  const code = validateHeaderImageFile(file);
+  if (code) {
+    setHeaderImageError(code);
+    input.value = '';
+    return;
+  }
+
+  isUploadingImage.value = true;
+  try {
+    const { blobId, fileUrl } = await uploadFile(file);
+    draft.headerImage = blobId;
+    draft.headerImageUrl = fileUrl;
+    headerImageName.value = file.name;
+    setHeaderImageError(null);
+  } catch (error) {
+    setHeaderImageError('upload_failed');
+  } finally {
+    isUploadingImage.value = false;
+    input.value = '';
+  }
 };
 
 const errorFor = field => {
@@ -189,6 +253,7 @@ const statusLabel = status => {
 };
 
 const submit = async () => {
+  if (isUploadingImage.value) return;
   requestError.value = null;
   errors.value = validateTemplateDraft(draft);
   if (errors.value.length) {
@@ -268,7 +333,66 @@ const submit = async () => {
         />
       </div>
 
-      <div class="flex flex-col gap-1">
+      <label class="flex flex-col gap-1 text-sm text-n-slate-12">
+        {{ $t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.FORMAT_LABEL') }}
+        <select
+          v-model="draft.headerFormat"
+          name="header_format"
+          class="!mb-0 rounded-lg"
+        >
+          <option
+            v-for="option in headerFormatOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+
+      <div
+        v-if="isImageHeader"
+        class="flex flex-col gap-1"
+        data-test-id="header-image"
+      >
+        <span class="text-sm text-n-slate-12">
+          {{ $t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.IMAGE_LABEL') }}
+        </span>
+        <label
+          class="flex cursor-pointer items-center gap-2 self-start rounded-lg px-3 py-2 text-sm font-medium text-n-slate-12 outline outline-1 outline-n-weak hover:bg-n-alpha-2"
+          :class="{ 'pointer-events-none opacity-60': isUploadingImage }"
+        >
+          <span class="i-lucide-image-up size-4" />
+          {{
+            isUploadingImage
+              ? $t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.IMAGE_UPLOADING')
+              : $t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.IMAGE_BUTTON')
+          }}
+          <input
+            type="file"
+            name="header_image_file"
+            class="hidden"
+            :accept="HEADER_IMAGE.ACCEPT"
+            :disabled="isUploadingImage"
+            @change="onHeaderImageChange"
+          />
+        </label>
+        <span
+          v-if="headerImageName"
+          class="text-xs text-n-slate-11"
+          data-test-id="header-image-name"
+        >
+          {{ headerImageName }}
+        </span>
+        <span v-if="errorFor('header_image')" class="text-xs text-n-ruby-9">
+          {{ errorFor('header_image') }}
+        </span>
+        <span v-else class="text-xs text-n-slate-10">
+          {{ $t('WHATSAPP_TEMPLATES.MANAGE.FORM.HEADER.IMAGE_HELP') }}
+        </span>
+      </div>
+
+      <div v-else class="flex flex-col gap-1">
         <Input
           v-model="draft.headerText"
           name="header_text"
@@ -447,7 +571,7 @@ const submit = async () => {
           type="submit"
           :label="$t('WHATSAPP_TEMPLATES.MANAGE.FORM.SUBMIT')"
           :is-loading="isSubmitting"
-          :disabled="isSubmitting"
+          :disabled="isSubmitting || isUploadingImage"
           data-test-id="submit-template"
         />
         <NextButton

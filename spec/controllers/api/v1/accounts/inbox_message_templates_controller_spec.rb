@@ -120,6 +120,43 @@ RSpec.describe Api::V1::Accounts::InboxMessageTemplatesController, type: :reques
         expect(response.parsed_body['error']).to eq('Template parameters are required')
       end
 
+      it 'creates a template with an image header uploaded to Meta' do
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io: File.open(Rails.root.join('spec/assets/avatar.png')), filename: 'promo.png', content_type: 'image/png'
+        )
+        allow(GlobalConfigService).to receive(:load).and_call_original
+        allow(GlobalConfigService).to receive(:load).with('WHATSAPP_APP_ID', '').and_return('555000111')
+        stub_request(:post, 'https://graph.facebook.com/v14.0/555000111/uploads').with(query: hash_including({}))
+                                                                                 .to_return(status: 200, body: { id: 'upload:abc' }.to_json)
+        stub_request(:post, 'https://graph.facebook.com/v14.0/upload:abc').to_return(status: 200, body: { h: 'handle-1' }.to_json)
+        stub_request(:post, templates_url).to_return(status: 200, body: { id: '1', status: 'PENDING' }.to_json)
+        image_params = { template: template_params[:template].merge(header_format: 'IMAGE', header_image: blob.signed_id) }
+
+        post create_path(whatsapp_inbox), params: image_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:created)
+        expect(
+          a_request(:post, templates_url).with do |req|
+            JSON.parse(req.body)['components'].first == { 'type' => 'HEADER', 'format' => 'IMAGE', 'example' => { 'header_handle' => ['handle-1'] } }
+          end
+        ).to have_been_made.once
+      end
+
+      it 'returns a validation error when WHATSAPP_APP_ID is missing for an image header' do
+        blob = ActiveStorage::Blob.create_and_upload!(
+          io: File.open(Rails.root.join('spec/assets/avatar.png')), filename: 'promo.png', content_type: 'image/png'
+        )
+        allow(GlobalConfigService).to receive(:load).and_call_original
+        allow(GlobalConfigService).to receive(:load).with('WHATSAPP_APP_ID', '').and_return(nil)
+        image_params = { template: template_params[:template].merge(header_format: 'IMAGE', header_image: blob.signed_id) }
+
+        post create_path(whatsapp_inbox), params: image_params, headers: admin.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['errors']).to include({ 'field' => 'header_image', 'code' => 'app_id_missing' })
+        expect(a_request(:post, //)).not_to have_been_made
+      end
+
       it 'returns request_failed when Meta cannot be reached' do
         stub_request(:post, templates_url).to_raise(Errno::ECONNREFUSED)
 
