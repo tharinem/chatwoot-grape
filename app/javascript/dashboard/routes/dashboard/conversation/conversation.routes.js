@@ -108,6 +108,30 @@ export default {
       }),
     },
     {
+      // Painel da gerência: one agent's conversations (admins, sidebar "Atendentes").
+      path: frontendURL('accounts/:accountId/agent/:agentId'),
+      name: 'agent_conversations',
+      meta: {
+        permissions: ['administrator'],
+      },
+      component: ConversationView,
+      props: route => ({ agentId: route.params.agentId }),
+    },
+    {
+      path: frontendURL(
+        'accounts/:accountId/agent/:agentId/conversations/:conversationId'
+      ),
+      name: 'conversations_through_agent',
+      meta: {
+        permissions: ['administrator'],
+      },
+      component: ConversationView,
+      props: route => ({
+        conversationId: route.params.conversationId,
+        agentId: route.params.agentId,
+      }),
+    },
+    {
       path: frontendURL('accounts/:accountId/custom_view/:id'),
       name: 'folder_conversations',
       meta: {

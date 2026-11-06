@@ -863,6 +863,82 @@ RSpec.describe 'Conversations API', type: :request do
     end
   end
 
+  describe 'POST /api/v1/accounts/{account.id}/conversations/:id/pin' do
+    let(:conversation) { create(:conversation, account: account) }
+    let(:agent) { create(:user, account: account, role: :agent) }
+    let(:pin_url) { "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}/pin" }
+
+    it 'returns unauthorized for unauthenticated users' do
+      post pin_url
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'does not let agents pin conversations from inboxes they cannot access' do
+      post pin_url, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(ConversationPin.count).to eq(0)
+    end
+
+    context 'when the agent can access the conversation' do
+      before { create(:inbox_member, user: agent, inbox: conversation.inbox) }
+
+      it 'pins the conversation only for the current user, idempotently' do
+        2.times { post pin_url, headers: agent.create_new_auth_token, as: :json }
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body).to eq('id' => conversation.display_id, 'pinned' => true)
+        expect(ConversationPin.where(user: agent, conversation: conversation, account: account).count).to eq(1)
+      end
+
+      it 'exposes pinned for the current user in the conversation payloads' do
+        other_agent = create(:user, account: account, role: :agent)
+        create(:inbox_member, user: other_agent, inbox: conversation.inbox)
+        ConversationPin.create!(user: agent, conversation: conversation)
+
+        get "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}", headers: agent.create_new_auth_token, as: :json
+        expect(response.parsed_body['pinned']).to be(true)
+
+        get "/api/v1/accounts/#{account.id}/conversations", params: { assignee_type: 'all' }, headers: agent.create_new_auth_token
+        expect(response.parsed_body['data']['payload'].first['pinned']).to be(true)
+
+        get "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}", headers: other_agent.create_new_auth_token, as: :json
+        expect(response.parsed_body['pinned']).to be(false)
+      end
+
+      it 'refuses to pin more than the per-user limit' do
+        create_list(:conversation, ConversationPin::MAX_PER_USER, account: account, inbox: conversation.inbox, assignee: agent).each do |pinned|
+          ConversationPin.create!(user: agent, conversation: pinned)
+        end
+
+        post pin_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to include(ConversationPin::MAX_PER_USER.to_s)
+        expect(ConversationPin.where(user: agent).count).to eq(ConversationPin::MAX_PER_USER)
+      end
+
+      it 'unpins the conversation' do
+        ConversationPin.create!(user: agent, conversation: conversation)
+
+        delete pin_url, headers: agent.create_new_auth_token, as: :json
+
+        expect(response).to have_http_status(:success)
+        expect(response.parsed_body['pinned']).to be(false)
+        expect(ConversationPin.count).to eq(0)
+      end
+
+      it 'removes the pins when the conversation is deleted' do
+        ConversationPin.create!(user: agent, conversation: conversation)
+
+        conversation.destroy!
+
+        expect(ConversationPin.count).to eq(0)
+      end
+    end
+  end
+
   describe 'POST /api/v1/accounts/{account.id}/conversations/:id/unmute' do
     let(:conversation) { create(:conversation, account: account).tap(&:mute!) }
 

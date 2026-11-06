@@ -2,7 +2,12 @@
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
-import { getLastMessage } from 'dashboard/helper/conversationHelper';
+import {
+  getLastMessage,
+  isWaitingForReply,
+} from 'dashboard/helper/conversationHelper';
+import { useConversationPin } from 'dashboard/composables/useConversationPin';
+import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import Avatar from 'next/avatar/Avatar.vue';
 import MessagePreview from './MessagePreview.vue';
@@ -21,6 +26,7 @@ const props = defineProps({
   hideInboxName: { type: Boolean, default: false },
   hideThumbnail: { type: Boolean, default: false },
   teamId: { type: [String, Number], default: 0 },
+  agentId: { type: [String, Number], default: 0 },
   foldersId: { type: [String, Number], default: 0 },
   showAssignee: { type: Boolean, default: false },
   conversationType: { type: String, default: '' },
@@ -47,6 +53,7 @@ const emit = defineEmits([
 
 const router = useRouter();
 const store = useStore();
+const { togglePin } = useConversationPin();
 
 const hovered = ref(false);
 const showContextMenu = ref(false);
@@ -94,6 +101,10 @@ const hasUnread = computed(() => unreadCount.value > 0);
 const isInboxNameVisible = computed(() => !activeInbox.value);
 
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
+
+const isWaiting = computed(() => isWaitingForReply(props.chat));
+
+const isPinned = computed(() => Boolean(props.chat.pinned));
 
 const voiceCallData = computed(() => ({
   status: props.chat.additional_attributes?.call_status,
@@ -144,6 +155,7 @@ const conversationPath = computed(() => {
       id: props.chat.id,
       label: props.activeLabel,
       teamId: props.teamId,
+      agentId: props.agentId,
       conversationType: props.conversationType,
       foldersId: props.foldersId,
     })
@@ -245,6 +257,11 @@ const deleteConversation = () => {
   emit('deleteConversation', props.chat.id);
   closeContextMenu();
 };
+
+const onTogglePin = () => {
+  closeContextMenu();
+  togglePin(props.chat);
+};
 </script>
 
 <template>
@@ -259,6 +276,15 @@ const deleteConversation = () => {
     @click="onCardClick"
     @contextmenu="openContextMenu($event)"
   >
+    <span
+      v-if="isWaiting"
+      v-tooltip.right="$t('CHAT_LIST.WAITING_FOR_REPLY')"
+      :aria-label="$t('CHAT_LIST.WAITING_FOR_REPLY')"
+      data-test-id="conversation-waiting-marker"
+      class="absolute inset-y-2 ltr:left-0 rtl:right-0 z-10 flex w-2 justify-start"
+    >
+      <span class="w-[3px] rounded-full bg-[#6B3FA0]" />
+    </span>
     <div
       class="relative"
       @mouseenter="onThumbnailHover"
@@ -359,7 +385,16 @@ const deleteConversation = () => {
         class="absolute flex flex-col ltr:right-3 rtl:left-3"
         :class="showMetaSection ? 'top-8' : 'top-4'"
       >
-        <span class="ml-auto font-normal leading-4 text-xxs">
+        <span
+          class="ml-auto font-normal leading-4 text-xxs flex items-center gap-1"
+        >
+          <Icon
+            v-if="isPinned"
+            v-tooltip.top="$t('CHAT_LIST.PINNED')"
+            icon="i-lucide-pin"
+            data-test-id="conversation-pinned-icon"
+            class="size-3 text-n-slate-10"
+          />
           <TimeAgo
             :last-activity-timestamp="chat.timestamp"
             :created-at-timestamp="chat.created_at"
@@ -398,6 +433,7 @@ const deleteConversation = () => {
         :conversation-labels="chat.labels"
         :conversation-url="conversationPath"
         :allowed-options="allowedContextMenuOptions"
+        :pinned="isPinned"
         @update-conversation="onUpdateConversation"
         @assign-agent="onAssignAgent"
         @assign-label="onAssignLabel"
@@ -407,6 +443,7 @@ const deleteConversation = () => {
         @mark-as-read="markAsRead"
         @assign-priority="assignPriority"
         @delete-conversation="deleteConversation"
+        @toggle-pin="onTogglePin"
         @close="closeContextMenu"
       />
     </ContextMenu>

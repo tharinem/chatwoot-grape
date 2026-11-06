@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyRoleFilter } from '../helpers';
+import { applyRoleFilter, applyPageFilters, sortComparator } from '../helpers';
 
 describe('Conversation Helpers', () => {
   describe('#applyRoleFilter', () => {
@@ -271,6 +271,48 @@ describe('Conversation Helpers', () => {
           )
         ).toBe(true);
       });
+    });
+  });
+
+  describe('#sortComparator with pinned conversations', () => {
+    it('keeps pinned conversations on top regardless of the sort', () => {
+      const conversations = [
+        { id: 1, last_activity_at: 300, created_at: 1 },
+        { id: 2, last_activity_at: 100, created_at: 2, pinned: true },
+        { id: 3, last_activity_at: 200, created_at: 3 },
+      ];
+
+      const sorted = [...conversations].sort((a, b) =>
+        sortComparator(a, b, 'last_activity_at_desc')
+      );
+      expect(sorted.map(c => c.id)).toEqual([2, 1, 3]);
+
+      const byCreated = [...conversations].sort((a, b) =>
+        sortComparator(a, b, 'created_at_desc')
+      );
+      expect(byCreated.map(c => c.id)).toEqual([2, 3, 1]);
+    });
+  });
+
+  describe('#applyPageFilters with assigneeId', () => {
+    const conversation = (assigneeId, assigneeType = 'User') => ({
+      status: 'open',
+      inbox_id: 1,
+      labels: [],
+      meta: { assignee: { id: assigneeId }, assignee_type: assigneeType },
+    });
+
+    it('keeps only the conversations of that agent', () => {
+      const filters = { status: 'open', assigneeId: '5' };
+      expect(applyPageFilters(conversation(5), filters)).toBe(true);
+      expect(applyPageFilters(conversation(6), filters)).toBe(false);
+      expect(applyPageFilters(conversation(5, 'AgentBot'), filters)).toBe(
+        false
+      );
+    });
+
+    it('does not filter when no agent is selected', () => {
+      expect(applyPageFilters(conversation(6), { status: 'open' })).toBe(true);
     });
   });
 });

@@ -143,6 +143,30 @@ describe('#ConversationAPI', () => {
       );
     });
 
+    it('#pin', () => {
+      conversationAPI.pin(45);
+      expect(axiosMock.post).toHaveBeenCalledWith(
+        '/api/v1/conversations/45/pin'
+      );
+    });
+
+    it('#unpin', () => {
+      conversationAPI.unpin(45);
+      expect(axiosMock.delete).toHaveBeenCalledWith(
+        '/api/v1/conversations/45/pin'
+      );
+    });
+
+    it('#get conversations of one agent', () => {
+      conversationAPI.get({ assigneeType: 'all', assigneeId: 7 });
+      expect(axiosMock.get).toHaveBeenCalledWith('/api/v1/conversations', {
+        params: expect.objectContaining({
+          assignee_type: 'all',
+          assignee_id: 7,
+        }),
+      });
+    });
+
     it('#meta', () => {
       conversationAPI.meta({
         inboxId: 1,

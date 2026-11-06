@@ -70,6 +70,7 @@ const onTabClick = event => {
           {{ getItemCount }}
         </span>
       </div>
+      <slot />
     </a>
   </li>
 </template>

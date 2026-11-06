@@ -54,6 +54,7 @@ import languages from 'dashboard/components/widgets/conversation/advancedFilterI
 import countries from 'shared/constants/countries';
 import { generateValuesForEditCustomViews } from 'dashboard/helper/customViewsHelper';
 import { conversationListPageURL } from '../helper/URLHelper';
+import { isWaitingForReply } from 'dashboard/helper/conversationHelper';
 import {
   isOnMentionsView,
   isOnUnattendedView,
@@ -69,6 +70,7 @@ import { ASSIGNEE_TYPE_TAB_PERMISSIONS } from 'dashboard/constants/permissions.j
 const props = defineProps({
   conversationInbox: { type: [String, Number], default: 0 },
   teamId: { type: [String, Number], default: 0 },
+  agentId: { type: [String, Number], default: 0 },
   label: { type: String, default: '' },
   conversationType: { type: String, default: '' },
   foldersId: { type: [String, Number], default: 0 },
@@ -89,7 +91,12 @@ const virtualListRef = ref(null);
 
 provide('contextMenuElementTarget', virtualListRef);
 
-const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
+// The agent view (sidebar "Atendentes") lists everything assigned to one agent.
+const defaultAssigneeTab = () =>
+  props.agentId
+    ? wootConstants.ASSIGNEE_TYPE.ALL
+    : wootConstants.ASSIGNEE_TYPE.ME;
+const activeAssigneeTab = ref(defaultAssigneeTab());
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
@@ -192,6 +199,19 @@ const userPermissions = computed(() => {
   return getUserPermissions(currentUser.value, currentAccountId.value);
 });
 
+// Waiting-for-reply count shown next to the "Mine" tab, computed from the
+// conversations already loaded (no extra request).
+const mineWaitingCount = computed(() => {
+  const filters = {
+    inboxId: props.conversationInbox || undefined,
+    status: activeStatus.value,
+    labels: props.label ? [props.label] : undefined,
+    teamId: props.teamId || undefined,
+    conversationType: props.conversationType || undefined,
+  };
+  return mineChatsList.value(filters).filter(isWaitingForReply).length;
+});
+
 const assigneeTabItems = computed(() => {
   return filterItemsByPermission(
     ASSIGNEE_TYPE_TAB_PERMISSIONS,
@@ -201,6 +221,8 @@ const assigneeTabItems = computed(() => {
     key,
     name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
     count: conversationStats.value[countKey] || 0,
+    waitingCount:
+      key === wootConstants.ASSIGNEE_TYPE.ME ? mineWaitingCount.value : 0,
   }));
 });
 
@@ -273,7 +295,15 @@ const conversationFilters = computed(() => {
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
+    assigneeId: props.agentId || undefined,
   };
+});
+
+const activeAgent = computed(() => {
+  if (!props.agentId) return {};
+  return (
+    agentList.value.find(agent => agent.id === Number(props.agentId)) || {}
+  );
 });
 
 const activeTeam = computed(() => {
@@ -292,6 +322,9 @@ const pageTitle = computed(() => {
   }
   if (activeTeam.value.name) {
     return activeTeam.value.name;
+  }
+  if (activeAgent.value.name) {
+    return activeAgent.value.name;
   }
   if (props.label) {
     return `#${props.label}`;
@@ -631,7 +664,7 @@ function openLastItemAfterDeleteInFolder() {
 
 function redirectToConversationList() {
   const {
-    params: { accountId, inbox_id: inboxId, label, teamId },
+    params: { accountId, inbox_id: inboxId, label, teamId, agentId },
     name,
   } = route;
 
@@ -649,6 +682,7 @@ function redirectToConversationList() {
       inboxId,
       label,
       teamId,
+      agentId,
     })
   );
 }
@@ -854,6 +888,13 @@ watch(
   computed(() => props.conversationType),
   () => resetAndFetchData()
 );
+watch(
+  computed(() => props.agentId),
+  () => {
+    activeAssigneeTab.value = defaultAssigneeTab();
+    resetAndFetchData();
+  }
+);
 
 watch(activeFolder, (newVal, oldVal) => {
   if (newVal !== oldVal) {
@@ -919,7 +960,7 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
 
     <ChatTypeTabs
-      v-if="!hasAppliedFiltersOrActiveFolders"
+      v-if="!hasAppliedFiltersOrActiveFolders && !agentId"
       :items="assigneeTabItems"
       :active-tab="activeAssigneeTab"
       is-compact
@@ -960,6 +1001,7 @@ watch(conversationFilters, (newVal, oldVal) => {
           :source="item"
           :label="label"
           :team-id="teamId"
+          :agent-id="agentId"
           :folders-id="foldersId"
           :conversation-type="conversationType"
           :show-assignee="showAssigneeInConversationCard"

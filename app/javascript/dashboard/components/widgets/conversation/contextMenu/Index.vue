@@ -24,6 +24,7 @@ const MENU = {
   DELETE: 'delete',
   OPEN_NEW_TAB: 'open-new-tab',
   COPY_LINK: 'copy-link',
+  PIN: 'pin',
 };
 
 export default {
@@ -65,6 +66,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    pinned: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: [
     'updateConversation',
@@ -76,6 +81,7 @@ export default {
     'assignLabel',
     'removeLabel',
     'deleteConversation',
+    'togglePin',
     'close',
   ],
   setup() {
@@ -212,6 +218,14 @@ export default {
         ...this.filteredAgentOnAvailability,
       ];
     },
+    pinOption() {
+      return {
+        label: this.pinned
+          ? this.$t('CONVERSATION.CARD_CONTEXT_MENU.UNPIN')
+          : this.$t('CONVERSATION.CARD_CONTEXT_MENU.PIN'),
+        lucideIcon: this.pinned ? 'i-lucide-pin-off' : 'i-lucide-pin',
+      };
+    },
     showSnooze() {
       // Don't show snooze if the conversation is already snoozed/resolved/pending
       return this.status === wootConstants.STATUS_TYPE.OPEN;
@@ -295,6 +309,15 @@ export default {
         :option="readOption"
         variant="icon"
         @click.stop="$emit('markAsRead')"
+      />
+      <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
+    </template>
+    <template v-if="isAllowed([MENU.PIN])">
+      <MenuItem
+        :option="pinOption"
+        variant="icon"
+        data-test-id="conversation-pin-toggle"
+        @click.stop="$emit('togglePin')"
       />
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
     </template>

@@ -54,6 +54,7 @@ Rails.application.routes.draw do
           resource :bulk_actions, only: [:create]
           resources :agents, only: [:index, :create, :update, :destroy] do
             post :bulk_create, on: :collection
+            get :conversation_counts, on: :collection
           end
           namespace :captain do
             resource :preferences, only: [:show, :update]
@@ -140,6 +141,7 @@ Rails.application.routes.draw do
               resource :participants, only: [:show, :create, :update, :destroy]
               resource :direct_uploads, only: [:create]
               resource :draft_messages, only: [:show, :update, :destroy]
+              resource :pin, only: [:create, :destroy]
             end
             member do
               post :mute

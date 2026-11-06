@@ -1125,4 +1125,30 @@ RSpec.describe Conversation do
       end
     end
   end
+
+  describe 'personal pins (ConversationPin)' do
+    let(:account) { create(:account) }
+    let(:user) { create(:user, account: account) }
+    let(:conversation) { create(:conversation, account: account) }
+
+    it 'takes the account from the conversation' do
+      expect(ConversationPin.create!(user: user, conversation: conversation).account_id).to eq(account.id)
+    end
+
+    it 'has a unique index on user and conversation' do
+      ConversationPin.create!(user: user, conversation: conversation)
+      duplicate = ConversationPin.new(user: user, conversation: conversation, account: account)
+
+      expect(duplicate).not_to be_valid
+      expect { duplicate.save!(validate: false) }.to raise_error(ActiveRecord::RecordNotUnique)
+    end
+
+    it 'is removed together with the user' do
+      ConversationPin.create!(user: user, conversation: conversation)
+
+      user.destroy!
+
+      expect(ConversationPin.count).to eq(0)
+    end
+  end
 end

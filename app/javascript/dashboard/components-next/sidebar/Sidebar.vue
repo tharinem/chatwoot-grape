@@ -1,5 +1,5 @@
 <script setup>
-import { h, ref, computed, onMounted } from 'vue';
+import { h, ref, computed, onMounted, watch } from 'vue';
 import { provideSidebarContext, useSidebarResize } from './provider';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
@@ -21,6 +21,9 @@ import SidebarChangelogButton from './SidebarChangelogButton.vue';
 import ChannelLeaf from './ChannelLeaf.vue';
 import TeamLeaf from './TeamLeaf.vue';
 import { useTeamQueueCounts } from './useTeamQueueCounts';
+import AgentLeaf from './AgentLeaf.vue';
+import { useAgentConversationCounts } from './useAgentConversationCounts';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 import ChannelIcon from 'next/icon/ChannelIcon.vue';
 import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
 import Logo from 'next/icon/Logo.vue';
@@ -163,6 +166,17 @@ const inboxes = useMapGetter('inboxes/getInboxes');
 const labels = useMapGetter('labels/getLabelsOnSidebar');
 const teams = useMapGetter('teams/getMyTeams');
 const { getCount: getTeamQueueCount } = useTeamQueueCounts();
+// Painel da gerência (admins only): agents with open / waiting counts.
+const { isAdmin } = useAdmin();
+const agents = useMapGetter('agents/getAgents');
+const {
+  getCounts: getAgentConversationCounts,
+  hasAgent: agentHasInbox,
+  fetchCounts: fetchAgentConversationCounts,
+} = useAgentConversationCounts({ enabled: isAdmin });
+const agentsWithInbox = computed(() =>
+  isAdmin.value ? agents.value.filter(agent => agentHasInbox(agent.id)) : []
+);
 const contactCustomViews = useMapGetter('customViews/getContactCustomViews');
 const conversationCustomViews = useMapGetter(
   'customViews/getConversationCustomViews'
@@ -176,6 +190,13 @@ onMounted(() => {
   store.dispatch('attributes/get');
   store.dispatch('customViews/get', 'conversation');
   store.dispatch('customViews/get', 'contact');
+  if (isAdmin.value) store.dispatch('agents/get');
+});
+
+watch(isAdmin, value => {
+  if (!value) return;
+  store.dispatch('agents/get');
+  fetchAgentConversationCounts();
 });
 
 const sortedInboxes = computed(() =>
@@ -287,6 +308,35 @@ const menuItems = computed(() => {
               }),
           })),
         },
+        ...(isAdmin.value
+          ? [
+              {
+                name: 'Agents',
+                label: t('SIDEBAR.AGENTS_CONVERSATIONS'),
+                icon: 'i-lucide-headset',
+                activeOn: ['conversations_through_agent'],
+                children: agentsWithInbox.value.map(agent => {
+                  const { open, waiting } = getAgentConversationCounts(
+                    agent.id
+                  );
+                  return {
+                    name: `agent-${agent.id}`,
+                    label: agent.available_name || agent.name,
+                    to: accountScopedRoute('agent_conversations', {
+                      agentId: agent.id,
+                    }),
+                    component: leafProps =>
+                      h(AgentLeaf, {
+                        label: leafProps.label,
+                        active: leafProps.active,
+                        open,
+                        waiting,
+                      }),
+                  };
+                }),
+              },
+            ]
+          : []),
         {
           name: 'Channels',
           label: t('SIDEBAR.CHANNELS'),

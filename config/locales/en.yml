@@ -48,6 +48,8 @@ en:
     inbox_deletetion_response: Your inbox deletion request will be processed in some time.
 
   errors:
+    conversation_pins:
+      limit_reached: 'You can pin up to %{limit} conversations. Unpin one to pin another.'
     account:
       reporting_timezone:
         invalid: is not a valid timezone
