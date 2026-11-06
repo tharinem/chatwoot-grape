@@ -59,4 +59,7 @@ json.last_activity_at conversation.last_activity_at.to_i
 json.priority conversation.priority
 json.waiting_since conversation.waiting_since.to_i.to_i
 json.sla_policy_id conversation.sla_policy_id
+# Personal pin ("Fixar conversa"): loaded once per render, not per conversation.
+@pinned_conversation_ids ||= ConversationPin.pinned_conversation_ids(Current.user, Current.account).to_set
+json.pinned @pinned_conversation_ids.include?(conversation.id)
 json.partial! 'enterprise/api/v1/conversations/partials/conversation', conversation: conversation if ChatwootApp.enterprise?

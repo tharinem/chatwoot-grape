@@ -3,6 +3,7 @@ import {
   getLastMessage,
   getReadMessages,
   getUnreadMessages,
+  isWaitingForReply,
 } from '../conversationHelper';
 import {
   conversationData,
@@ -96,6 +97,53 @@ describe('conversationHelper', () => {
       expect(getLastMessage(testConversation)).toEqual(
         testConversation.messages[1]
       );
+    });
+  });
+
+  describe('#isWaitingForReply', () => {
+    const incoming = { id: 1, message_type: 0, created_at: 100 };
+    const outgoing = { id: 2, message_type: 1, created_at: 200 };
+    const note = { id: 3, message_type: 1, private: true, created_at: 300 };
+    const activity = { id: 4, message_type: 2, created_at: 400 };
+
+    it('is true when the last public message came from the contact', () => {
+      expect(
+        isWaitingForReply({ status: 'open', messages: [outgoing, incoming] })
+      ).toBe(false);
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [{ ...incoming, created_at: 500 }, activity],
+        })
+      ).toBe(true);
+    });
+
+    it('ignores private notes and activity messages', () => {
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [note, activity],
+          last_non_activity_message: { ...incoming, created_at: 250 },
+        })
+      ).toBe(true);
+    });
+
+    it('uses the latest of the loaded messages and the API field', () => {
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [incoming],
+          last_non_activity_message: outgoing,
+        })
+      ).toBe(false);
+    });
+
+    it('is false for conversations that are not open or have no messages', () => {
+      expect(
+        isWaitingForReply({ status: 'resolved', messages: [incoming] })
+      ).toBe(false);
+      expect(isWaitingForReply({ status: 'open', messages: [] })).toBe(false);
+      expect(isWaitingForReply()).toBe(false);
     });
   });
 });

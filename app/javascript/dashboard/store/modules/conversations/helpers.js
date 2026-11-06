@@ -20,6 +20,11 @@ export const filterByTeam = (shouldFilter, teamId, chatTeamId) => {
   return teamId ? isOnTeam && shouldFilter : shouldFilter;
 };
 
+export const filterByAssignee = (shouldFilter, assigneeId, chatAssigneeId) => {
+  if (!assigneeId) return shouldFilter;
+  return shouldFilter && Number(assigneeId) === chatAssigneeId;
+};
+
 export const filterByLabel = (shouldFilter, labels, chatLabels) => {
   const isOnLabel = labels.every(label => chatLabels.includes(label));
   return labels.length ? isOnLabel && shouldFilter : shouldFilter;
@@ -36,7 +41,14 @@ export const filterByUnattended = (
 };
 
 export const applyPageFilters = (conversation, filters) => {
-  const { inboxId, status, labels = [], teamId, conversationType } = filters;
+  const {
+    inboxId,
+    status,
+    labels = [],
+    teamId,
+    conversationType,
+    assigneeId,
+  } = filters;
   const {
     status: chatStatus,
     inbox_id: chatInboxId,
@@ -51,6 +63,9 @@ export const applyPageFilters = (conversation, filters) => {
   let shouldFilter = filterByStatus(chatStatus, status);
   shouldFilter = filterByInbox(shouldFilter, inboxId, chatInboxId);
   shouldFilter = filterByTeam(shouldFilter, teamId, chatTeamId);
+  const chatAssigneeId =
+    meta.assignee_type === 'AgentBot' ? undefined : meta.assignee?.id;
+  shouldFilter = filterByAssignee(shouldFilter, assigneeId, chatAssigneeId);
   shouldFilter = filterByLabel(shouldFilter, labels, chatLabels);
   shouldFilter = filterByUnattended(
     shouldFilter,
@@ -162,6 +177,9 @@ const sortConfig = {
 };
 
 export const sortComparator = (a, b, sortKey) => {
+  // Conversations pinned by the current user ("Fixar conversa") stay on top.
+  if (Boolean(a.pinned) !== Boolean(b.pinned)) return a.pinned ? -1 : 1;
+
   const [sortMethod, sortDirection] =
     SORT_OPTIONS[sortKey] || SORT_OPTIONS.last_activity_at_desc;
   return sortConfig[sortMethod](a, b, sortDirection);

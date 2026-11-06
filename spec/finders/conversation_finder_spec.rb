@@ -229,5 +229,55 @@ describe ConversationFinder do
         expect(result[:conversations].length).to be 2
       end
     end
+
+    context 'with assignee_id' do
+      it 'returns only the conversations assigned to that agent, with matching counts' do
+        result = described_class.new(admin, { status: 'open', assignee_type: 'all', assignee_id: user_2.id }).perform
+
+        expect(result[:conversations].map(&:assignee_id)).to eq([user_2.id])
+        expect(result[:count][:all_count]).to eq(1)
+      end
+
+      it 'keeps the inbox permission filter for agents' do
+        create(:conversation, account: account, inbox: restricted_inbox, assignee: user_2)
+        result = described_class.new(user_1, { status: 'open', assignee_type: 'all', assignee_id: user_2.id }).perform
+
+        expect(result[:conversations].map(&:inbox_id)).to eq([inbox.id])
+      end
+    end
+
+    context 'with pinned conversations' do
+      let(:params) { { status: 'open', assignee_type: 'me' } }
+      let!(:old_conversation) { create(:conversation, account: account, inbox: inbox, assignee: user_1, last_activity_at: 3.days.ago) }
+
+      it 'lists the conversations pinned by the current user first' do
+        ConversationPin.create!(user: user_1, conversation: old_conversation)
+
+        result = conversation_finder.perform
+
+        expect(result[:conversations].first).to eq(old_conversation)
+        expect(result[:conversations].length).to eq(3)
+      end
+
+      it 'does not reorder the list for other users' do
+        ConversationPin.create!(user: admin, conversation: old_conversation)
+
+        result = conversation_finder.perform
+
+        expect(result[:conversations].last).to eq(old_conversation)
+      end
+
+      it 'keeps pinned conversations on the first page' do
+        create_list(:conversation, 30, account: account, inbox: inbox, assignee: user_1, last_activity_at: 1.hour.ago)
+        ConversationPin.create!(user: user_1, conversation: old_conversation)
+
+        first_page = described_class.new(user_1, params.merge(page: 1)).perform[:conversations]
+        second_page = described_class.new(user_1, params.merge(page: 2)).perform[:conversations]
+
+        expect(first_page.first).to eq(old_conversation)
+        expect(second_page).not_to include(old_conversation)
+        expect((first_page.to_a + second_page.to_a).uniq.size).to eq(33)
+      end
+    end
   end
 end

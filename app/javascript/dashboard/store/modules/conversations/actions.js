@@ -456,6 +456,17 @@ const actions = {
     }
   },
 
+  // Personal pin ("Fixar conversa"). Errors (e.g. pin limit) are re-thrown so
+  // the caller can show the message returned by the API.
+  setConversationPinned: async ({ commit }, { conversationId, pinned }) => {
+    if (pinned) {
+      await ConversationApi.pin(conversationId);
+    } else {
+      await ConversationApi.unpin(conversationId);
+    }
+    commit(types.SET_CONVERSATION_PINNED, { conversationId, pinned });
+  },
+
   sendEmailTranscript: async (_, { conversationId, email }) => {
     await ConversationApi.sendEmailTranscript({ conversationId, email });
   },

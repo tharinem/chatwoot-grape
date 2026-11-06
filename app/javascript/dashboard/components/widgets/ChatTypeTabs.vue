@@ -16,6 +16,8 @@ const props = defineProps({
 
 const emit = defineEmits(['chatTabChange']);
 
+const formatWaitingCount = count => (count > 99 ? '99+' : count);
+
 const activeTabIndex = computed(() => {
   return props.items.findIndex(item => item.key === props.activeTab);
 });
@@ -59,6 +61,15 @@ useKeyboardEvents(keyboardEvents);
       :name="item.name"
       :count="item.count"
       is-compact
-    />
+    >
+      <span
+        v-if="item.waitingCount > 0"
+        v-tooltip.top="$t('CHAT_LIST.MINE_WAITING_COUNT', item.waitingCount)"
+        data-test-id="mine-waiting-count"
+        class="rounded-md h-5 flex items-center justify-center text-xs font-medium ltr:ml-1 rtl:mr-1 px-1.5 min-w-[20px] text-white bg-[#6B3FA0]"
+      >
+        {{ formatWaitingCount(item.waitingCount) }}
+      </span>
+    </woot-tabs-item>
   </woot-tabs>
 </template>

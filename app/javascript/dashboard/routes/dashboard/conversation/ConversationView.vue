@@ -44,6 +44,10 @@ export default {
       type: String,
       default: '',
     },
+    agentId: {
+      type: String,
+      default: '',
+    },
     conversationType: {
       type: String,
       default: '',
@@ -201,6 +205,7 @@ export default {
       :conversation-inbox="inboxId"
       :label="label"
       :team-id="teamId"
+      :agent-id="agentId"
       :conversation-type="conversationType"
       :folders-id="foldersId"
       :is-on-expanded-layout="isOnExpandedLayout"

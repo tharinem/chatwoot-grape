@@ -89,6 +89,43 @@ describe('#actions', () => {
     });
   });
 
+  describe('#setConversationPinned', () => {
+    it('pins through the API and updates the store', async () => {
+      axios.post.mockResolvedValue({ data: { id: 1, pinned: true } });
+      await actions.setConversationPinned(
+        { commit },
+        { conversationId: 1, pinned: true }
+      );
+      expect(axios.post).toHaveBeenCalledWith('/api/v1/conversations/1/pin');
+      expect(commit.mock.calls).toEqual([
+        [types.SET_CONVERSATION_PINNED, { conversationId: 1, pinned: true }],
+      ]);
+    });
+
+    it('unpins through the API', async () => {
+      axios.delete.mockResolvedValue({ data: { id: 1, pinned: false } });
+      await actions.setConversationPinned(
+        { commit },
+        { conversationId: 1, pinned: false }
+      );
+      expect(axios.delete).toHaveBeenCalledWith('/api/v1/conversations/1/pin');
+      expect(commit.mock.calls).toEqual([
+        [types.SET_CONVERSATION_PINNED, { conversationId: 1, pinned: false }],
+      ]);
+    });
+
+    it('does not change the store and rethrows when the API fails', async () => {
+      axios.post.mockRejectedValue({ response: { data: { error: 'limit' } } });
+      await expect(
+        actions.setConversationPinned(
+          { commit },
+          { conversationId: 1, pinned: true }
+        )
+      ).rejects.toEqual({ response: { data: { error: 'limit' } } });
+      expect(commit.mock.calls).toEqual([]);
+    });
+  });
+
   describe('#updateConversation', () => {
     it('sends setContact action and update_conversation mutation', () => {
       const conversation = {

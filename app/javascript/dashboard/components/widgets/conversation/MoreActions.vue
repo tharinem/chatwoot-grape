@@ -3,6 +3,7 @@ import { computed, onUnmounted } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { useStore } from 'vuex';
 import { useAlert } from 'dashboard/composables';
+import { useConversationPin } from 'dashboard/composables/useConversationPin';
 import { useI18n } from 'vue-i18n';
 import { emitter } from 'shared/helpers/mitt';
 import EmailTranscriptModal from './EmailTranscriptModal.vue';
@@ -19,6 +20,7 @@ import {
 // No props needed as we're getting currentChat from the store directly
 const store = useStore();
 const { t } = useI18n();
+const { togglePin } = useConversationPin();
 
 const [showEmailActionsModal, toggleEmailModal] = useToggle(false);
 const [showActionsDropdown, toggleDropdown] = useToggle(false);
@@ -26,7 +28,16 @@ const [showActionsDropdown, toggleDropdown] = useToggle(false);
 const currentChat = computed(() => store.getters.getSelectedChat);
 
 const actionMenuItems = computed(() => {
-  const items = [];
+  const items = [
+    {
+      icon: currentChat.value.pinned ? 'i-lucide-pin-off' : 'i-lucide-pin',
+      label: currentChat.value.pinned
+        ? t('CONVERSATION.CARD_CONTEXT_MENU.UNPIN')
+        : t('CONVERSATION.CARD_CONTEXT_MENU.PIN'),
+      action: 'toggle_pin',
+      value: 'toggle_pin',
+    },
+  ];
 
   if (!currentChat.value.muted) {
     items.push({
@@ -65,6 +76,8 @@ const handleActionClick = ({ action }) => {
     useAlert(t('CONTACT_PANEL.UNMUTED_SUCCESS'));
   } else if (action === 'send_transcript') {
     toggleEmailModal();
+  } else if (action === 'toggle_pin') {
+    togglePin(currentChat.value);
   }
 };
 

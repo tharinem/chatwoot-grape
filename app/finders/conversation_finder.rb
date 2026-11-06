@@ -82,6 +82,7 @@ class ConversationFinder
     find_all_conversations
     filter_by_status unless params[:q]
     filter_by_team
+    filter_by_assignee_id
     filter_by_labels
     filter_by_query
     filter_by_source_id
@@ -170,6 +171,13 @@ class ConversationFinder
     @conversations = @conversations.where(team: @team)
   end
 
+  # Painel da gerência: list one agent's conversations (sidebar "Atendentes").
+  def filter_by_assignee_id
+    return if params[:assignee_id].blank?
+
+    @conversations = @conversations.where(assignee_id: params[:assignee_id])
+  end
+
   def filter_by_labels
     return unless params[:labels]
 
@@ -191,6 +199,15 @@ class ConversationFinder
     ]
   end
 
+  # Conversations pinned by the current user come first ("Fixar conversa"),
+  # then the selected sort. Being part of the ORDER BY keeps pagination stable.
+  def pinned_first(scope)
+    pinned_ids = ConversationPin.pinned_conversation_ids(current_user, current_account)
+    return scope if pinned_ids.empty?
+
+    scope.order(Arel.sql(ActiveRecord::Base.sanitize_sql_array(['conversations.id IN (?) DESC', pinned_ids])))
+  end
+
   def current_page
     params[:page] || 1
   end
@@ -205,7 +222,7 @@ class ConversationFinder
     @conversations = conversations_base_query
 
     sort_by, sort_order = SORT_OPTIONS[params[:sort_by]] || SORT_OPTIONS['last_activity_at_desc']
-    @conversations = @conversations.send(sort_by, sort_order)
+    @conversations = pinned_first(@conversations).send(sort_by, sort_order)
 
     if params[:updated_within].present?
       @conversations.where('conversations.updated_at > ?', Time.zone.now - params[:updated_within].to_i.seconds)

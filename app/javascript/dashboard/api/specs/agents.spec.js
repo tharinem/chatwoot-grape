@@ -15,6 +15,7 @@ describe('#AgentAPI', () => {
     const originalAxios = window.axios;
     const axiosMock = {
       post: vi.fn(() => Promise.resolve()),
+      get: vi.fn(() => Promise.resolve()),
     };
 
     beforeEach(() => {
@@ -23,6 +24,13 @@ describe('#AgentAPI', () => {
 
     afterEach(() => {
       window.axios = originalAxios;
+    });
+
+    it('#getConversationCounts', () => {
+      agents.getConversationCounts();
+      expect(axiosMock.get).toHaveBeenCalledWith(
+        '/api/v1/agents/conversation_counts'
+      );
     });
 
     it('#bulkInvite', () => {

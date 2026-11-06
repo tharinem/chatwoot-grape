@@ -28,6 +28,10 @@ export default {
       type: [String, Number],
       default: 0,
     },
+    agentId: {
+      type: [String, Number],
+      default: 0,
+    },
     label: {
       type: String,
       default: '',
@@ -52,6 +56,7 @@ export default {
   <ConversationCard
     :active-label="label"
     :team-id="teamId"
+    :agent-id="agentId"
     :folders-id="foldersId"
     :chat="source"
     :conversation-type="conversationType"

@@ -8,6 +8,9 @@
     },
     "FAILED_TO_SEND": "Falha ao enviar",
     "TAB_HEADING": "Conversas",
+    "WAITING_FOR_REPLY": "Cliente sem resposta",
+    "MINE_WAITING_COUNT": "{count} conversa sua com cliente sem resposta | {count} conversas suas com cliente sem resposta",
+    "PINNED": "Fixada",
     "MENTION_HEADING": "Menções",
     "UNATTENDED_HEADING": "Não Atendidas",
     "SEARCH": {

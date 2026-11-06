@@ -367,6 +367,9 @@
     "REPORTS_OVERVIEW": "Visão geral",
     "REAUTHORIZE": "A conexão com a sua caixa de entrada expirou. Por favor, reconecte para continuar recebendo e enviando mensagens",
     "TEAM_QUEUE_COUNT": "{count} conversa aberta sem responsável | {count} conversas abertas sem responsável",
+    "AGENTS_CONVERSATIONS": "Atendentes",
+    "AGENT_OPEN_COUNT": "{count} conversa aberta | {count} conversas abertas",
+    "AGENT_WAITING_COUNT": "{count} cliente sem resposta | {count} clientes sem resposta",
     "HELP_CENTER": {
       "TITLE": "Central de Ajuda",
       "ARTICLES": "Artigos",
