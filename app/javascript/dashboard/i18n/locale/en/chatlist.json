@@ -2,6 +2,11 @@
   "CHAT_LIST": {
     "LOADING": "Fetching conversations",
     "LOAD_MORE_CONVERSATIONS": "Load more conversations",
+    "SELECTION_MODE": {
+      "START": "Select",
+      "DONE": "Done",
+      "START_LABEL": "Select conversations"
+    },
     "EOF": "All conversations loaded 🎉",
     "LIST": {
       "404": "There are no active conversations in this group."

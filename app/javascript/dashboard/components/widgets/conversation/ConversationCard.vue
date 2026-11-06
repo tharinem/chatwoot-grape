@@ -28,6 +28,8 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   enableContextMenu: { type: Boolean, default: false },
   allowedContextMenuOptions: { type: Array, default: () => [] },
+  // Touch selection mode: checkbox always visible and a tap toggles selection.
+  selectionMode: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -150,7 +152,24 @@ const conversationPath = computed(() => {
   );
 });
 
+const onSelectConversation = checked => {
+  if (checked) {
+    emit('selectConversation', props.chat.id, inbox.value.id);
+  } else {
+    emit('deSelectConversation', props.chat.id, inbox.value.id);
+  }
+};
+
+const showSelectionCheckbox = computed(
+  () => hovered.value || props.selected || props.selectionMode
+);
+
 const onCardClick = e => {
+  if (props.selectionMode) {
+    onSelectConversation(!props.selected);
+    return;
+  }
+
   const path = conversationPath.value;
   if (!path) return;
 
@@ -177,14 +196,6 @@ const onThumbnailHover = () => {
 
 const onThumbnailLeave = () => {
   hovered.value = false;
-};
-
-const onSelectConversation = checked => {
-  if (checked) {
-    emit('selectConversation', props.chat.id, inbox.value.id);
-  } else {
-    emit('deSelectConversation', props.chat.id, inbox.value.id);
-  }
 };
 
 const openContextMenu = e => {
@@ -276,7 +287,7 @@ const deleteConversation = () => {
       >
         <template #overlay="{ size }">
           <label
-            v-if="hovered || selected"
+            v-if="showSelectionCheckbox"
             class="flex items-center justify-center rounded-full cursor-pointer absolute inset-0 z-10 backdrop-blur-[2px]"
             :style="{ width: `${size}px`, height: `${size}px` }"
             @click.stop
