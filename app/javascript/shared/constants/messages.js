@@ -149,6 +149,10 @@ export const MESSAGE_VARIABLES = [
     label: 'Inbox id',
     key: 'inbox.id',
   },
+  {
+    label: 'Saudação (Bom dia/Boa tarde/Boa noite)',
+    key: 'saudacao',
+  },
 ];
 
 export const ATTACHMENT_ICONS = {
