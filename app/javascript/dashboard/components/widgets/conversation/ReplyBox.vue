@@ -25,10 +25,13 @@ import { AUDIO_FORMATS } from 'shared/constants/messages';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { CMD_AI_ASSIST } from 'dashboard/helper/commandbar/events';
 import {
-  getMessageVariables,
   getUndefinedVariablesInMessage,
   replaceVariablesInMessage,
 } from '@chatwoot/utils';
+import {
+  getMessageVariables,
+  replaceGreetingVariables,
+} from 'dashboard/helper/messageVariables';
 import WhatsappTemplates from './WhatsappTemplates/Modal.vue';
 import ContentTemplates from './ContentTemplates/ContentTemplatesModal.vue';
 import { MESSAGE_MAX_LENGTH } from 'shared/helpers/MessageTypeHelper';
@@ -376,6 +379,7 @@ export default {
         conversation: this.currentChat,
         contact: this.currentContact,
         inbox: this.inbox,
+        account: this.$store.getters['accounts/getAccount'](this.accountId),
       });
       return variables;
     },
@@ -754,6 +758,10 @@ export default {
         return;
       }
       if (!this.showMentions) {
+        this.message = replaceGreetingVariables({
+          message: this.message,
+          variables: this.messageVariables,
+        });
         const copilotAcceptedMessage = this.getCopilotAcceptedMessage();
         const isOnWhatsApp =
           this.isATwilioWhatsAppChannel ||
