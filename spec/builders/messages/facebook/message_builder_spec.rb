@@ -223,6 +223,18 @@ describe Messages::Facebook::MessageBuilder do
           expect(facebook_channel.inbox.conversations.last.id).to eq(existing_conversation.id)
           expect(Conversation.count).to eq(inital_count)
         end
+
+        it 'reopens the conversation with the most recent activity' do
+          active_conversation = create(:conversation, account_id: facebook_channel.inbox.account.id, inbox_id: facebook_channel.inbox.id,
+                                                      contact_id: contact.id, contact_inbox_id: contact_inbox.id, last_activity_at: 1.minute.ago)
+          newer_conversation = create(:conversation, account_id: facebook_channel.inbox.account.id, inbox_id: facebook_channel.inbox.id,
+                                                     contact_id: contact.id, contact_inbox_id: contact_inbox.id, last_activity_at: 1.day.ago)
+
+          mocked_message_builder
+
+          expect(active_conversation.reload.messages.count).to eq(1)
+          expect(newer_conversation.reload.messages.count).to eq(0)
+        end
       end
     end
   end

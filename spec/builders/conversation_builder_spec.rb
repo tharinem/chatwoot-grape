@@ -79,6 +79,17 @@ describe ConversationBuilder do
 
         expect(conversation.id).to eq(existing_conversation.id)
       end
+
+      it 'returns the api conversation with the most recent activity' do
+        active_conversation = create(:conversation, contact_inbox: contact_api_inbox, last_activity_at: 1.minute.ago)
+        create(:conversation, contact_inbox: contact_api_inbox, last_activity_at: 1.day.ago)
+        conversation = described_class.new(
+          contact_inbox: contact_api_inbox,
+          params: {}
+        ).perform
+
+        expect(conversation.id).to eq(active_conversation.id)
+      end
     end
   end
 end
