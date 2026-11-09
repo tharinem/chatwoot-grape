@@ -1,11 +1,35 @@
 class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
-  before_action :fetch_agent, except: [:create, :index, :bulk_create]
+  before_action :fetch_agent, except: [:create, :index, :bulk_create, :conversation_counts]
   before_action :check_authorization
   before_action :validate_limit, only: [:create]
   before_action :validate_limit_for_bulk_create, only: [:bulk_create]
 
+  WAITING_FOR_REPLY_SQL = <<~SQL.squish.freeze
+    (SELECT last_message.message_type FROM messages last_message
+     WHERE last_message.conversation_id = conversations.id
+       AND last_message.private = FALSE
+       AND last_message.message_type <> #{Message.message_types[:activity]}
+     ORDER BY last_message.created_at DESC, last_message.id DESC LIMIT 1) = #{Message.message_types[:incoming]}
+  SQL
+
   def index
     @agents = agents
+  end
+
+  # Painel da gerência: for each agent who is a member of at least one inbox,
+  # how many open conversations are assigned to them and how many of those are
+  # waiting for a reply (last public, non-activity message came from the contact).
+  # Returns { agent_id => { open:, waiting: } } in a single grouped query.
+  def conversation_counts
+    conversations = Conversations::PermissionFilterService.new(
+      Current.account.conversations, Current.user, Current.account
+    ).perform
+
+    counts = conversations.open.where(assignee_id: inbox_member_ids).group(:assignee_id)
+                          .pluck(:assignee_id, Arel.sql('COUNT(*)'), Arel.sql("COUNT(*) FILTER (WHERE #{WAITING_FOR_REPLY_SQL})"))
+                          .to_h { |agent_id, open, waiting| [agent_id, { open: open, waiting: waiting }] }
+
+    render json: inbox_member_ids.index_with { |id| counts[id] || { open: 0, waiting: 0 } }.transform_keys(&:to_s)
   end
 
   def create
@@ -58,6 +82,13 @@ class Api::V1::Accounts::AgentsController < Api::V1::Accounts::BaseController
   end
 
   private
+
+  def inbox_member_ids
+    @inbox_member_ids ||= InboxMember.joins(:inbox)
+                                     .where(inboxes: { account_id: Current.account.id })
+                                     .where(user_id: Current.account.account_users.select(:user_id))
+                                     .distinct.pluck(:user_id)
+  end
 
   def check_authorization
     super(User)

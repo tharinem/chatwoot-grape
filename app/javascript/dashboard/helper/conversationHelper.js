@@ -92,3 +92,41 @@ export const getUnreadMessages = (messages, agentLastSeenAt) => {
     message => message.created_at * 1000 > agentLastSeenAt * 1000
   );
 };
+
+const MESSAGE_TYPE_INCOMING = 0;
+const MESSAGE_TYPE_ACTIVITY = 2;
+
+const isPublicNonActivityMessage = message =>
+  Boolean(message) &&
+  !message.private &&
+  message.message_type !== MESSAGE_TYPE_ACTIVITY;
+
+const isNewerMessage = (candidate, current) => {
+  if (candidate.created_at !== current.created_at) {
+    return candidate.created_at > current.created_at;
+  }
+  return (candidate.id || 0) > (current.id || 0);
+};
+
+/**
+ * An open conversation is "waiting for a reply" when its last public,
+ * non-activity message came from the contact. Uses only the data already in
+ * the conversation list payload (loaded messages + last_non_activity_message),
+ * so it updates live as messages arrive.
+ * @param {Object} conversation - Conversation from the store.
+ * @returns {Boolean}
+ */
+export const isWaitingForReply = (conversation = {}) => {
+  if (conversation.status !== 'open') return false;
+
+  const candidates = [
+    ...(conversation.messages || []),
+    conversation.last_non_activity_message,
+  ].filter(isPublicNonActivityMessage);
+  if (!candidates.length) return false;
+
+  const latest = candidates.reduce((current, candidate) =>
+    isNewerMessage(candidate, current) ? candidate : current
+  );
+  return latest.message_type === MESSAGE_TYPE_INCOMING;
+};

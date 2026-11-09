@@ -757,6 +757,29 @@ describe('#mutations', () => {
     });
   });
 
+  describe('#SET_CONVERSATION_PINNED', () => {
+    it('sets the pin of the matching conversation only', () => {
+      const state = {
+        allConversations: [
+          { id: 1, pinned: false },
+          { id: 2, pinned: false },
+        ],
+      };
+
+      mutations[types.SET_CONVERSATION_PINNED](state, {
+        conversationId: 2,
+        pinned: true,
+      });
+      expect(state.allConversations.map(c => c.pinned)).toEqual([false, true]);
+
+      mutations[types.SET_CONVERSATION_PINNED](state, {
+        conversationId: 99,
+        pinned: true,
+      });
+      expect(state.allConversations.map(c => c.pinned)).toEqual([false, true]);
+    });
+  });
+
   describe('#UPDATE_CONVERSATION', () => {
     it('should update existing conversation', () => {
       const state = {

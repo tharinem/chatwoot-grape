@@ -164,6 +164,11 @@ export const mutations = {
     chat.muted = true;
   },
 
+  [types.SET_CONVERSATION_PINNED](_state, { conversationId, pinned }) {
+    const chat = _state.allConversations.find(c => c.id === conversationId);
+    if (chat) chat.pinned = pinned;
+  },
+
   [types.UNMUTE_CONVERSATION](_state) {
     const [chat] = getSelectedChatConversation(_state);
     chat.muted = false;

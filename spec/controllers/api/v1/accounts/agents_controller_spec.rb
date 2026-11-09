@@ -43,6 +43,64 @@ RSpec.describe 'Agents API', type: :request do
     end
   end
 
+  describe 'GET /api/v1/accounts/{account.id}/agents/conversation_counts' do
+    let(:url) { "/api/v1/accounts/#{account.id}/agents/conversation_counts" }
+    let(:inbox) { create(:inbox, account: account) }
+    let(:other_inbox) { create(:inbox, account: account) }
+    let!(:agent_without_inbox) { create(:user, account: account, role: :agent) }
+    let(:waiting) { create(:conversation, account: account, inbox: inbox, assignee: agent, status: :open) }
+    let(:replied) { create(:conversation, account: account, inbox: other_inbox, assignee: agent, status: :open) }
+    let(:noted) { create(:conversation, account: account, inbox: inbox, assignee: agent, status: :open) }
+
+    before do
+      create(:inbox_member, user: agent, inbox: inbox)
+      create(:inbox_member, user: admin, inbox: other_inbox)
+      create(:message, conversation: waiting, account: account, inbox: inbox, message_type: :outgoing, created_at: 2.minutes.ago)
+      create(:message, conversation: waiting, account: account, inbox: inbox, message_type: :incoming, created_at: 1.minute.ago)
+      create(:message, conversation: waiting, account: account, inbox: inbox, message_type: :activity, created_at: 30.seconds.ago)
+      create(:message, conversation: replied, account: account, inbox: other_inbox, message_type: :incoming, created_at: 2.minutes.ago)
+      create(:message, conversation: replied, account: account, inbox: other_inbox, message_type: :outgoing, created_at: 1.minute.ago)
+      # a private note after the customer message does not count as a reply
+      create(:message, conversation: noted, account: account, inbox: inbox, message_type: :incoming, created_at: 2.minutes.ago)
+      create(:message, conversation: noted, account: account, inbox: inbox, message_type: :outgoing, private: true, created_at: 1.minute.ago)
+      # not open: ignored
+      create(:conversation, account: account, inbox: inbox, assignee: agent, status: :resolved)
+      create(:conversation, account: account, inbox: inbox, assignee: agent_without_inbox, status: :open)
+    end
+
+    it 'returns unauthorized for unauthenticated users' do
+      get url
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'is not available to agents' do
+      get url, headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'returns open and waiting counts for every agent who belongs to an inbox' do
+      get url, headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body).to eq(
+        agent.id.to_s => { 'open' => 3, 'waiting' => 2 },
+        admin.id.to_s => { 'open' => 0, 'waiting' => 0 }
+      )
+    end
+
+    it 'does not count conversations from other accounts' do
+      other_account = create(:account)
+      create(:account_user, account: other_account, user: agent)
+      create(:conversation, account: other_account, assignee: agent, status: :open)
+
+      get url, headers: admin.create_new_auth_token, as: :json
+
+      expect(response.parsed_body[agent.id.to_s]).to eq('open' => 3, 'waiting' => 2)
+    end
+  end
+
   describe 'DELETE /api/v1/accounts/{account.id}/agents/:id' do
     let(:other_agent) { create(:user, account: account, role: :agent) }
 
