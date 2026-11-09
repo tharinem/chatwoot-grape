@@ -280,6 +280,21 @@ describe Messages::Instagram::MessageBuilder do
       expect(instagram_inbox.conversations.last.id).to eq(existing_conversation.id)
       expect(Conversation.count).to eq(initial_count)
     end
+
+    it 'reopens the conversation with the most recent activity' do
+      messaging = dm_params[:entry][0]['messaging'][0]
+      contact = create_instagram_contact_for_sender(messaging['sender']['id'], instagram_inbox)
+      active_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
+                                                  contact_id: contact.id, status: :resolved, last_activity_at: 1.minute.ago)
+      newer_conversation = create(:conversation, account_id: account.id, inbox_id: instagram_inbox.id,
+                                                 contact_id: contact.id, status: :resolved, last_activity_at: 1.day.ago)
+
+      described_class.new(messaging, instagram_inbox).perform
+
+      expect(active_conversation.reload.messages.count).to eq(1)
+      expect(newer_conversation.reload.messages.count).to eq(0)
+      expect(Conversation.count).to eq(2)
+    end
   end
 
   describe '#fetch_story_link' do

@@ -56,6 +56,41 @@ describe Whatsapp::IncomingMessageService do
         expect(last_conversation.reload.status).to eq('open')
       end
 
+      context 'when lock to single conversation is enabled and the contact has multiple conversations' do
+        let(:contact_inbox) { create(:contact_inbox, inbox: whatsapp_channel.inbox, source_id: params[:messages].first[:from]) }
+        let!(:older_conversation) do
+          create(:conversation, inbox: whatsapp_channel.inbox, contact_inbox: contact_inbox, contact: contact_inbox.contact,
+                                status: :resolved, last_activity_at: 3.days.ago)
+        end
+        let!(:newer_conversation) do
+          create(:conversation, inbox: whatsapp_channel.inbox, contact_inbox: contact_inbox, contact: contact_inbox.contact,
+                                status: :resolved, last_activity_at: 2.days.ago)
+        end
+
+        before { whatsapp_channel.inbox.update(lock_to_single_conversation: true) }
+
+        it 'routes the reply to the older conversation where a template was just sent' do
+          template = create(:message, conversation: older_conversation, message_type: :outgoing, content: 'Template',
+                                      additional_attributes: { template_params: { name: 'ativo', language: 'pt_BR' } })
+          expect(older_conversation.reload.last_activity_at).to be_within(1.second).of(template.created_at)
+
+          described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+
+          expect(whatsapp_channel.inbox.conversations.count).to eq(2)
+          expect(older_conversation.reload.messages.last.content).to eq(params[:messages].first[:text][:body])
+          expect(older_conversation.status).to eq('open')
+          expect(newer_conversation.reload.messages.count).to eq(0)
+        end
+
+        it 'routes the reply to the newest conversation when it has the latest activity' do
+          described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+
+          expect(whatsapp_channel.inbox.conversations.count).to eq(2)
+          expect(newer_conversation.reload.messages.last.content).to eq(params[:messages].first[:text][:body])
+          expect(older_conversation.reload.messages.count).to eq(0)
+        end
+      end
+
       it 'creates a new conversation if last conversation is resolved and lock to single conversation is disabled' do
         whatsapp_channel.inbox.update(lock_to_single_conversation: false)
         contact_inbox = create(:contact_inbox, inbox: whatsapp_channel.inbox, source_id: params[:messages].first[:from])
