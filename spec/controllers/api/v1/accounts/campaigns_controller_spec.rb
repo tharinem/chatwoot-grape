@@ -308,4 +308,92 @@ RSpec.describe 'Campaigns API', type: :request do
       end
     end
   end
+
+  describe 'campaign agents (CAMPAIGN_AGENT_IDS)' do
+    let(:campaign_agent) { create(:user, account: account, role: :agent) }
+    let(:other_agent) { create(:user, account: account, role: :agent) }
+    let(:whatsapp_inbox) do
+      create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', validate_provider_config: false, sync_templates: false).inbox
+    end
+    let(:label) { create(:label, account: account) }
+    let(:campaign_params) do
+      {
+        title: 'Promo da semana',
+        message: 'Oi, cupom CAFE20',
+        inbox_id: whatsapp_inbox.id,
+        scheduled_at: 1.day.from_now,
+        audience: [{ type: 'Label', id: label.id }],
+        template_params: { name: 'promo', namespace: 'ns', category: 'MARKETING', language: 'pt_BR', processed_params: {} }
+      }
+    end
+
+    around do |example|
+      with_modified_env('CAMPAIGN_AGENT_IDS' => " 999999 , #{campaign_agent.id}") { example.run }
+    end
+
+    before { create(:inbox_member, user: campaign_agent, inbox: whatsapp_inbox) }
+
+    it 'lets the listed agent create, list and show campaigns' do
+      headers = campaign_agent.create_new_auth_token
+
+      post "/api/v1/accounts/#{account.id}/campaigns", params: campaign_params, headers: headers, as: :json
+      expect(response).to have_http_status(:success)
+      display_id = response.parsed_body['id']
+
+      get "/api/v1/accounts/#{account.id}/campaigns", headers: headers, as: :json
+      expect(response).to have_http_status(:success)
+      expect(response.parsed_body.pluck('id')).to include(display_id)
+
+      get "/api/v1/accounts/#{account.id}/campaigns/#{display_id}", headers: headers, as: :json
+      expect(response).to have_http_status(:success)
+    end
+
+    it 'lets the listed agent update and delete campaigns' do
+      headers = campaign_agent.create_new_auth_token
+      campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now)
+
+      patch "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}", params: { title: 'Promo editada' }, headers: headers, as: :json
+      expect(response).to have_http_status(:success)
+      expect(campaign.reload.title).to eq('Promo editada')
+
+      delete "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}", headers: headers, as: :json
+      expect(response).to have_http_status(:success)
+      expect(Campaign.exists?(campaign.id)).to be(false)
+    end
+
+    it 'refuses a campaign on an inbox the agent is not a member of' do
+      other_inbox = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', validate_provider_config: false,
+                                              sync_templates: false).inbox
+
+      expect do
+        post "/api/v1/accounts/#{account.id}/campaigns",
+             params: campaign_params.merge(inbox_id: other_inbox.id), headers: campaign_agent.create_new_auth_token, as: :json
+      end.not_to change(Campaign, :count)
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'still refuses agents that are not listed' do
+      get "/api/v1/accounts/#{account.id}/campaigns", headers: other_agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
+
+      post "/api/v1/accounts/#{account.id}/campaigns", params: campaign_params, headers: other_agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'keeps settings APIs blocked for the listed agent' do
+      get "/api/v1/accounts/#{account.id}/automation_rules", headers: campaign_agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
+
+      post "/api/v1/accounts/#{account.id}/labels", params: { title: 'nova' }, headers: campaign_agent.create_new_auth_token, as: :json
+      expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'exposes the campaign_manage permission on the profile' do
+      get '/api/v1/profile', headers: campaign_agent.create_new_auth_token, as: :json
+
+      account_payload = response.parsed_body['accounts'].find { |a| a['id'] == account.id }
+      expect(account_payload['role']).to eq('agent')
+      expect(account_payload['permissions']).to eq(%w[agent campaign_manage])
+    end
+  end
 end

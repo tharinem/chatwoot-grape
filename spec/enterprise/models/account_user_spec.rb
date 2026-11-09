@@ -19,6 +19,26 @@ RSpec.describe AccountUser, type: :model do
       end
     end
 
+    context 'when custom role has campaign_manage' do
+      it 'is a campaign manager' do
+        account = create(:account)
+        custom_role = create(:custom_role, account: account, permissions: %w[conversation_manage campaign_manage])
+        account_user = create(:account_user, account: account, custom_role: custom_role)
+
+        expect(account_user.campaign_manager?).to be(true)
+      end
+    end
+
+    context 'when custom role does not have campaign_manage' do
+      it 'is not a campaign manager' do
+        account = create(:account)
+        custom_role = create(:custom_role, account: account, permissions: %w[conversation_manage])
+        account_user = create(:account_user, account: account, custom_role: custom_role)
+
+        expect(account_user.campaign_manager?).to be(false)
+      end
+    end
+
     context 'when custom role is not assigned' do
       it 'returns permissions of the default role' do
         account = create(:account)

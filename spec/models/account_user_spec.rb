@@ -26,6 +26,28 @@ RSpec.describe AccountUser do
       account_user.administrator!
       expect(account_user.permissions).to eq(['administrator'])
     end
+
+    it 'adds campaign_manage for agents listed in CAMPAIGN_AGENT_IDS' do
+      with_modified_env('CAMPAIGN_AGENT_IDS' => "1, #{account_user.user_id}") do
+        expect(account_user.permissions).to eq(%w[agent campaign_manage])
+        expect(account_user.campaign_manager?).to be(true)
+      end
+    end
+
+    it 'does not grant campaigns to agents outside CAMPAIGN_AGENT_IDS' do
+      with_modified_env('CAMPAIGN_AGENT_IDS' => '') do
+        expect(account_user.permissions).to eq(['agent'])
+        expect(account_user.campaign_manager?).to be(false)
+      end
+    end
+
+    it 'keeps administrators as plain administrators even when listed' do
+      account_user.administrator!
+      with_modified_env('CAMPAIGN_AGENT_IDS' => account_user.user_id.to_s) do
+        expect(account_user.permissions).to eq(['administrator'])
+        expect(account_user.campaign_manager?).to be(true)
+      end
+    end
   end
 
   describe 'destroy call agent::destroy service' do

@@ -244,6 +244,20 @@ RSpec.describe 'Contacts API', type: :request do
       end
     end
 
+    context 'when it is an agent listed in CAMPAIGN_AGENT_IDS' do
+      let(:agent) { create(:user, account: account, role: :agent) }
+
+      it 'labels the matched contacts' do
+        contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '1234' })
+        with_modified_env('CAMPAIGN_AGENT_IDS' => agent.id.to_s) do
+          bulk_label({ label: 'semana', rows: [{ code: '1234' }] }, agent)
+        end
+
+        expect(response).to have_http_status(:success)
+        expect(contact.reload.label_list).to include('semana')
+      end
+    end
+
     context 'when it is an administrator' do
       it 'labels contacts matched by customer code, creating the label and keeping existing labels' do
         contact = create(:contact, account: account, custom_attributes: { codigo_cliente: '1234' })
