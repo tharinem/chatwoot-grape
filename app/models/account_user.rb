@@ -54,7 +54,24 @@ class AccountUser < ApplicationRecord
   end
 
   def permissions
-    administrator? ? ['administrator'] : ['agent']
+    return ['administrator'] if administrator?
+
+    campaign_agent? ? %w[agent campaign_manage] : ['agent']
+  end
+
+  # Campaigns (and the contact tools used to build a campaign audience) are
+  # admin-only upstream. Administrators, agents with a custom role that has
+  # 'campaign_manage', and agents listed in CAMPAIGN_AGENT_IDS (user ids,
+  # comma separated, e.g. "36,37") can manage them. This grants no access to
+  # Settings.
+  def campaign_manager?
+    administrator? || permissions.include?('campaign_manage')
+  end
+
+  def campaign_agent?
+    return false unless agent?
+
+    ENV.fetch('CAMPAIGN_AGENT_IDS', '').split(',').map(&:strip).compact_blank.include?(user_id.to_s)
   end
 
   def push_event_data

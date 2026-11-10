@@ -1,21 +1,27 @@
 class CampaignPolicy < ApplicationPolicy
   def index?
-    @account_user.administrator?
+    campaign_manager?
   end
 
   def update?
-    @account_user.administrator?
+    campaign_manager?
   end
 
   def show?
-    @account_user.administrator?
+    campaign_manager?
   end
 
   def create?
-    @account_user.administrator?
+    campaign_manager?
   end
 
   def destroy?
-    @account_user.administrator?
+    campaign_manager?
+  end
+
+  private
+
+  def campaign_manager?
+    @account_user&.campaign_manager? || false
   end
 end

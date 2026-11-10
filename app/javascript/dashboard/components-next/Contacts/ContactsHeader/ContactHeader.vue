@@ -1,11 +1,13 @@
 <script setup>
+import { computed } from 'vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ContactSortMenu from './components/ContactSortMenu.vue';
 import ContactMoreActions from './components/ContactMoreActions.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
-import { useAdmin } from 'dashboard/composables/useAdmin';
+import { usePolicy } from 'dashboard/composables/usePolicy';
+import { CAMPAIGN_PERMISSIONS } from 'dashboard/constants/permissions.js';
 
 defineProps({
   showSearch: { type: Boolean, default: true },
@@ -32,7 +34,12 @@ const emit = defineEmits([
   'labelBySpreadsheet',
 ]);
 
-const { isAdmin } = useAdmin();
+const { checkPermissions } = usePolicy();
+// Building the weekly campaign list is part of the campaign flow, so
+// campaign managers get this action too.
+const canLabelBySpreadsheet = computed(() =>
+  checkPermissions(['administrator', CAMPAIGN_PERMISSIONS])
+);
 </script>
 
 <template>
@@ -111,7 +118,7 @@ const { isAdmin } = useAdmin();
               @update:sort="emit('update:sort', $event)"
             />
             <Button
-              v-if="isAdmin"
+              v-if="canLabelBySpreadsheet"
               :label="
                 $t('CONTACTS_LAYOUT.HEADER.ACTIONS.LABEL_BY_SPREADSHEET.BUTTON')
               "

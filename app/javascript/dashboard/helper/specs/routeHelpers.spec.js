@@ -44,6 +44,18 @@ describe('#defaultRedirectPage', () => {
     expect(defaultRedirectPage(to, permissions)).toBe('accounts/2/portals');
   });
 
+  it('should return whatsapp campaigns route for a campaign-only custom role', () => {
+    const permissions = ['campaign_manage', 'custom_role'];
+    expect(defaultRedirectPage(to, permissions)).toBe(
+      'accounts/2/campaigns/whatsapp'
+    );
+  });
+
+  it('should keep agents with campaign_manage on the dashboard', () => {
+    const permissions = ['agent', 'campaign_manage'];
+    expect(defaultRedirectPage(to, permissions)).toBe('accounts/2/dashboard');
+  });
+
   it('should return dashboard route as default for users with custom roles', () => {
     const permissions = ['custom_role'];
     expect(defaultRedirectPage(to, permissions)).toBe('accounts/2/dashboard');

@@ -16,7 +16,7 @@ class ContactPolicy < ApplicationPolicy
   end
 
   def bulk_label_by_codes?
-    @account_user.administrator?
+    @account_user.campaign_manager?
   end
 
   def search?
