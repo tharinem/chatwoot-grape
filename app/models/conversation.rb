@@ -78,8 +78,13 @@ class Conversation < ApplicationRecord
   scope :unassigned, -> { where(assignee_id: nil) }
   scope :assigned, -> { where.not(assignee_id: nil) }
   scope :assigned_to, ->(agent) { where(assignee_id: agent.id) }
-  # With lock_to_single_conversation, incoming messages go to the conversation the business last talked in
-  scope :most_recently_active, -> { order(last_activity_at: :desc, id: :desc) }
+  # With lock_to_single_conversation, incoming messages go to the conversation the business last talked in.
+  # Unresolved conversations (open, pending, snoozed) win over resolved ones, because resolving a conversation
+  # creates activity messages that bump its last_activity_at. Resolved ones are only used when nothing else exists.
+  scope :most_recently_active, lambda {
+    order(Arel.sql("CASE WHEN conversations.status = #{Conversation.statuses[:resolved].to_i} THEN 1 ELSE 0 END"),
+          last_activity_at: :desc, id: :desc)
+  }
   scope :unattended, -> { where(first_reply_created_at: nil).or(where.not(waiting_since: nil)) }
   scope :resolvable_not_waiting, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?

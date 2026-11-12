@@ -927,6 +927,40 @@ RSpec.describe Conversation do
     end
   end
 
+  describe '.most_recently_active' do
+    let(:contact_inbox) { create(:contact_inbox) }
+    let(:scope) { contact_inbox.conversations.most_recently_active }
+
+    def create_conversation(status:, last_activity_at:)
+      create(:conversation, inbox: contact_inbox.inbox, contact_inbox: contact_inbox, contact: contact_inbox.contact,
+                            status: status, last_activity_at: last_activity_at)
+    end
+
+    it 'prefers unresolved conversations over resolved ones with newer activity' do
+      open_conversation = create_conversation(status: :open, last_activity_at: 3.hours.ago)
+      pending_conversation = create_conversation(status: :pending, last_activity_at: 2.hours.ago)
+      snoozed_conversation = create_conversation(status: :snoozed, last_activity_at: 4.hours.ago)
+      resolved_conversation = create_conversation(status: :resolved, last_activity_at: 1.minute.ago)
+
+      expect(scope.to_a).to eq([pending_conversation, open_conversation, snoozed_conversation, resolved_conversation])
+    end
+
+    it 'returns the resolved conversation with the newest activity when nothing is unresolved' do
+      create_conversation(status: :resolved, last_activity_at: 2.days.ago)
+      newest_resolved = create_conversation(status: :resolved, last_activity_at: 1.hour.ago)
+
+      expect(scope.first).to eq(newest_resolved)
+    end
+
+    it 'breaks last_activity_at ties by the highest id' do
+      activity = 1.hour.ago
+      create_conversation(status: :open, last_activity_at: activity)
+      latest = create_conversation(status: :open, last_activity_at: activity)
+
+      expect(scope.first).to eq(latest)
+    end
+  end
+
   describe '#can_reply?' do
     let(:conversation) { create(:conversation) }
     let(:message_window_service) { instance_double(Conversations::MessageWindowService) }
