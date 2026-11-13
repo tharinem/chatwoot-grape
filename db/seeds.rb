@@ -2,10 +2,10 @@
 GlobalConfig.clear_cache
 ConfigLoader.new.process
 
-# Apply Grape Ai branding (overrides Chatwoot defaults)
+# Apply Grape AI branding (overrides Chatwoot defaults)
 grape_branding = {
-  'INSTALLATION_NAME' => 'Grape Ai',
-  'BRAND_NAME' => 'Grape Ai',
+  'INSTALLATION_NAME' => 'Grape AI',
+  'BRAND_NAME' => 'Grape AI',
   'LOGO' => 'https://i.ibb.co/hFLSfwg6/Group-1.png',
   'LOGO_DARK' => 'https://i.ibb.co/Nn3Z5mMw/Group-3.png',
   'LOGO_THUMBNAIL' => 'https://i.ibb.co/tMLg0FFJ/Group-2.png',
