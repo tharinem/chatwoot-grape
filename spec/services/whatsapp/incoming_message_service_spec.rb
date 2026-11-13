@@ -89,6 +89,21 @@ describe Whatsapp::IncomingMessageService do
           expect(newer_conversation.reload.messages.last.content).to eq(params[:messages].first[:text][:body])
           expect(older_conversation.reload.messages.count).to eq(0)
         end
+
+        it 'routes the reply to the open conversation even when a resolved one has newer activity' do
+          open_conversation = create(:conversation, inbox: whatsapp_channel.inbox, contact_inbox: contact_inbox,
+                                                    contact: contact_inbox.contact, status: :open, last_activity_at: 3.hours.ago)
+          newer_conversation.update!(last_activity_at: 1.minute.ago)
+
+          described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+
+          expect(whatsapp_channel.inbox.conversations.count).to eq(3)
+          expect(open_conversation.reload.messages.last.content).to eq(params[:messages].first[:text][:body])
+          expect(open_conversation.status).to eq('open')
+          expect(newer_conversation.reload.messages.count).to eq(0)
+          expect(newer_conversation.status).to eq('resolved')
+          expect(older_conversation.reload.messages.count).to eq(0)
+        end
       end
 
       it 'creates a new conversation if last conversation is resolved and lock to single conversation is disabled' do
