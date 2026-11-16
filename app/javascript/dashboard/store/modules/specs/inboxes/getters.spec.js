@@ -108,6 +108,40 @@ describe('#getters', () => {
   });
 
   describe('getFilteredWhatsAppTemplates', () => {
+    it('adds the default header image saved for the template', () => {
+      const imageTemplate = {
+        name: 'promo',
+        language: 'pt_BR',
+        status: 'APPROVED',
+        category: 'MARKETING',
+        components: [
+          { type: 'HEADER', format: 'IMAGE' },
+          { type: 'BODY', text: 'Oi' },
+        ],
+      };
+      const state = {
+        records: [
+          {
+            id: 1,
+            message_templates: [
+              imageTemplate,
+              { ...imageTemplate, name: 'sem_imagem' },
+            ],
+            template_header_images: {
+              'promo:pt_BR': { url: 'https://chat.example.com/promo.png' },
+            },
+          },
+        ],
+      };
+
+      const [withImage, withoutImage] =
+        getters.getFilteredWhatsAppTemplates(state)(1);
+      expect(withImage.default_header_image_url).toBe(
+        'https://chat.example.com/promo.png'
+      );
+      expect(withoutImage).not.toHaveProperty('default_header_image_url');
+    });
+
     it('returns empty array when inbox not found', () => {
       const state = { records: [] };
       expect(getters.getFilteredWhatsAppTemplates(state)(999)).toEqual([]);

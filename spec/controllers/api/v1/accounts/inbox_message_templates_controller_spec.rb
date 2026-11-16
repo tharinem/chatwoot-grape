@@ -140,6 +140,10 @@ RSpec.describe Api::V1::Accounts::InboxMessageTemplatesController, type: :reques
             JSON.parse(req.body)['components'].first == { 'type' => 'HEADER', 'format' => 'IMAGE', 'example' => { 'header_handle' => ['handle-1'] } }
           end
         ).to have_been_made.once
+
+        saved = whatsapp_channel.reload.template_header_images['boas_vindas:pt_BR']
+        expect(saved).to include('blob_id' => blob.id)
+        expect(saved['url']).to include('/rails/active_storage/blobs/proxy/')
       end
 
       it 'returns a validation error when WHATSAPP_APP_ID is missing for an image header' do
@@ -165,6 +169,94 @@ RSpec.describe Api::V1::Accounts::InboxMessageTemplatesController, type: :reques
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body).to include('error' => 'request_failed', 'error_type' => 'request_failed')
       end
+    end
+  end
+
+  describe 'PATCH /api/v1/accounts/{account.id}/inboxes/{inbox.id}/message_templates/header_image' do
+    let(:header_image_path) { "/api/v1/accounts/#{account.id}/inboxes/#{whatsapp_inbox.id}/message_templates/header_image" }
+    let(:meta_image_url) { 'https://scontent.whatsapp.net/v/t61/promo.png?oe=ABC' }
+
+    def png_blob
+      ActiveStorage::Blob.create_and_upload!(
+        io: File.open(Rails.root.join('spec/assets/avatar.png')), filename: 'promo.png', content_type: 'image/png'
+      )
+    end
+
+    before do
+      whatsapp_channel.update!(message_templates: [
+                                 { 'name' => 'promo', 'language' => 'pt_BR', 'status' => 'APPROVED',
+                                   'components' => [{ 'type' => 'HEADER', 'format' => 'IMAGE',
+                                                      'example' => { 'header_handle' => [meta_image_url] } }] },
+                                 { 'name' => 'texto', 'language' => 'pt_BR', 'status' => 'APPROVED',
+                                   'components' => [{ 'type' => 'BODY', 'text' => 'Oi' }] }
+                               ])
+    end
+
+    it 'returns unauthorized for agents' do
+      patch header_image_path, params: { name: 'promo', language: 'pt_BR', header_image: png_blob.signed_id },
+                               headers: agent.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(whatsapp_channel.reload.template_header_images).to eq({})
+    end
+
+    it 'saves an uploaded image as the template default' do
+      blob = png_blob
+
+      patch header_image_path, params: { name: 'promo', language: 'pt_BR', header_image: blob.signed_id },
+                               headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['key']).to eq('promo:pt_BR')
+      expect(whatsapp_channel.reload.template_header_images['promo:pt_BR']).to include('blob_id' => blob.id)
+    end
+
+    it 'rejects files that are not jpeg or png' do
+      text_blob = ActiveStorage::Blob.create_and_upload!(io: StringIO.new('not an image'), filename: 'a.txt', content_type: 'text/plain')
+
+      patch header_image_path, params: { name: 'promo', language: 'pt_BR', header_image: text_blob.signed_id },
+                               headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('invalid_file_type')
+    end
+
+    it 'copies the example image Meta keeps for the template' do
+      stub_request(:get, meta_image_url).to_return(
+        status: 200, body: File.binread(Rails.root.join('spec/assets/avatar.png')), headers: { 'Content-Type' => 'image/png' }
+      )
+
+      expect do
+        patch header_image_path, params: { name: 'promo', language: 'pt_BR', from_template: true },
+                                 headers: admin.create_new_auth_token, as: :json
+      end.to change(ActiveStorage::Blob, :count).by(1)
+
+      expect(response).to have_http_status(:ok)
+      saved = whatsapp_channel.reload.template_header_images['promo:pt_BR']
+      expect(ActiveStorage::Blob.find(saved['blob_id']).content_type).to eq('image/png')
+    end
+
+    it 'returns no_image_header for templates without an image header' do
+      patch header_image_path, params: { name: 'texto', language: 'pt_BR', from_template: true },
+                               headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('no_image_header')
+    end
+
+    it 'does not download images outside the Meta CDN' do
+      whatsapp_channel.update!(message_templates: [
+                                 { 'name' => 'promo', 'language' => 'pt_BR',
+                                   'components' => [{ 'type' => 'HEADER', 'format' => 'IMAGE',
+                                                      'example' => { 'header_handle' => ['https://evil.example.com/a.png'] } }] }
+                               ])
+
+      patch header_image_path, params: { name: 'promo', language: 'pt_BR', from_template: true },
+                               headers: admin.create_new_auth_token, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('download_failed')
+      expect(a_request(:get, //)).not_to have_been_made
     end
   end
 end

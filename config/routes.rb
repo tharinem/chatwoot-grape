@@ -231,7 +231,9 @@ Rails.application.routes.draw do
             resource :csat_template, only: [:show, :create], controller: 'inbox_csat_templates' do
               post :analyze, on: :collection
             end
-            resources :message_templates, only: [:create], controller: 'inbox_message_templates'
+            resources :message_templates, only: [:create], controller: 'inbox_message_templates' do
+              patch :header_image, on: :collection
+            end
           end
 
           resources :inbox_members, only: [:create, :show], param: :inbox_id do

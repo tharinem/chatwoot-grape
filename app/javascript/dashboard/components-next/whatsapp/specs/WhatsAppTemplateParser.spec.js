@@ -138,3 +138,70 @@ describe('WhatsAppTemplateParser media upload', () => {
     expect(wrapper.vm.processedParams.header.media_url).toBe('');
   });
 });
+
+describe('WhatsAppTemplateParser default header image', () => {
+  const savedUrl =
+    'https://chat.example.com/rails/active_storage/blobs/proxy/x/promo.png';
+  const templateWithDefault = {
+    ...imageTemplate,
+    default_header_image_url: savedUrl,
+  };
+
+  beforeEach(() => {
+    uploadFile.mockReset();
+  });
+
+  it('prefills the header with the image saved for the template', async () => {
+    const wrapper = mountParser(templateWithDefault);
+    await flushPromises();
+
+    expect(wrapper.vm.processedParams.header.media_url).toBe(savedUrl);
+    expect(
+      wrapper.find('[data-test-id="media-default-image-hint"]').exists()
+    ).toBe(true);
+    expect(wrapper.find('[data-test-id="send"]').attributes('disabled')).toBe(
+      undefined
+    );
+  });
+
+  it('keeps the image of a campaign being edited', async () => {
+    const wrapper = mount(WhatsAppTemplateParser, {
+      props: {
+        template: templateWithDefault,
+        initialParams: {
+          header: { media_url: 'https://cdn.example.com/old.png' },
+        },
+      },
+    });
+    await flushPromises();
+
+    expect(wrapper.vm.processedParams.header.media_url).toBe(
+      'https://cdn.example.com/old.png'
+    );
+    expect(
+      wrapper.find('[data-test-id="media-default-image-hint"]').exists()
+    ).toBe(false);
+  });
+
+  it('lets the upload replace the default image', async () => {
+    uploadFile.mockResolvedValue({
+      publicUrl: 'https://chat.example.com/new.png',
+    });
+    const wrapper = mountParser(templateWithDefault);
+
+    await chooseFile(wrapper, imageFile());
+
+    expect(wrapper.vm.processedParams.header.media_url).toBe(
+      'https://chat.example.com/new.png'
+    );
+    expect(
+      wrapper.find('[data-test-id="media-default-image-hint"]').exists()
+    ).toBe(false);
+  });
+
+  it('leaves the header empty when the template has no saved image', () => {
+    const wrapper = mountParser(imageTemplate);
+
+    expect(wrapper.vm.processedParams.header.media_url).toBe('');
+  });
+});

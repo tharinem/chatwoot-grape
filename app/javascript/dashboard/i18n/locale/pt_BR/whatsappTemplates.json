@@ -46,7 +46,8 @@
       "UPLOADING_IMAGE": "Aguarde o envio",
       "UPLOAD_IMAGE_ERROR": "Não foi possível enviar a imagem. Tente de novo ou cole um link público.",
       "UPLOAD_IMAGE_INVALID_TYPE": "Use uma imagem JPG ou PNG.",
-      "UPLOAD_IMAGE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB."
+      "UPLOAD_IMAGE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB.",
+      "DEFAULT_IMAGE_HINT": "Esta é a imagem salva com o modelo. Envie outra imagem para trocar só neste envio."
     },
     "MANAGE": {
       "TITLE": "Modelos de mensagem",
@@ -157,6 +158,23 @@
         "FILE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB.",
         "APP_ID_MISSING": "Cabeçalho com imagem precisa do ID do app da Meta (WHATSAPP_APP_ID) configurado nesta instalação. Fale com o administrador.",
         "UPLOAD_FAILED": "Não foi possível enviar a imagem. Tente de novo."
+      },
+      "DEFAULT_IMAGE": {
+        "TITLE": "Imagem padrão para campanhas",
+        "DESCRIPTION": "Campanhas com este modelo já começam com esta imagem. Dá para trocar em cada campanha.",
+        "EMPTY": "Nenhuma imagem salva para este modelo ainda.",
+        "USE_TEMPLATE_IMAGE": "Usar a imagem do modelo",
+        "UPLOAD": "Enviar imagem",
+        "REPLACE": "Trocar imagem",
+        "SAVING": "Aguarde",
+        "SAVED": "Imagem padrão salva.",
+        "ERRORS": {
+          "INVALID_FILE_TYPE": "Use uma imagem JPG ou PNG.",
+          "FILE_TOO_LARGE": "A imagem precisa ter no máximo 5 MB.",
+          "NO_IMAGE_HEADER": "Este modelo não tem cabeçalho com imagem.",
+          "DOWNLOAD_FAILED": "Não foi possível copiar a imagem da Meta. Envie a imagem pelo botão ao lado.",
+          "DEFAULT": "Não foi possível salvar a imagem. Tente de novo."
+        }
       }
     }
   }
