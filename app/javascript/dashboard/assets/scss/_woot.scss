@@ -66,6 +66,33 @@ body {
     scrollbar-width: none; /* Firefox */
   }
 
+  /*
+   * Thin scrollbar that stays visible (no macOS overlay auto-hide) so long
+   * lists show they can scroll. Blink/WebKit use the pseudo-elements; the
+   * standard properties are only applied where those are unsupported
+   * (Firefox), because setting them in Chrome disables the pseudo-elements.
+   */
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--slate-7));
+    border-radius: 9999px;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(var(--slate-9));
+  }
+  @supports not selector(::-webkit-scrollbar) {
+    .thin-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(var(--slate-7)) transparent;
+    }
+  }
+
   /**
    * ============================================================================
    * TYPOGRAPHY UTILITIES

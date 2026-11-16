@@ -989,7 +989,7 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
     <div
       ref="conversationListRef"
-      class="flex-1 min-h-0 overflow-y-auto conversations-list"
+      class="flex-1 min-h-0 overflow-y-auto thin-scrollbar conversations-list"
       :class="{ '!overflow-hidden': isContextMenuOpen }"
     >
       <Virtualizer
