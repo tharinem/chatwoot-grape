@@ -58,7 +58,7 @@ useEventListener(scrollableContainer, 'scroll', () => {
       ref="scrollableContainer"
       class="min-w-0"
       :class="{
-        'max-h-[calc(14rem+16px)] overflow-y-scroll no-scrollbar': isScrollable,
+        'max-h-[calc(14rem+16px)] overflow-y-auto thin-scrollbar': isScrollable,
       }"
     >
       <SidebarGroupLeaf

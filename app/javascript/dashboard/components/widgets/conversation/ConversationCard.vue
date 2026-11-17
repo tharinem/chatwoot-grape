@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import {
@@ -72,6 +72,13 @@ const resetState = () => {
 };
 
 watch(() => props.chat.id, resetState);
+
+// The list blocks its own scrolling while a context menu is open. If this card
+// is removed (conversation left the list, virtualizer dropped the row) while
+// its menu is open, release that lock, otherwise the list stays unscrollable.
+onBeforeUnmount(() => {
+  if (showContextMenu.value) emit('contextMenuToggle', false);
+});
 
 const currentChat = useMapGetter('getSelectedChat');
 const inboxesList = useMapGetter('inboxes/getInboxes');
