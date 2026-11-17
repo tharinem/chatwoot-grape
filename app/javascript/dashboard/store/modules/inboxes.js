@@ -57,6 +57,7 @@ export const getters = {
     const {
       message_templates: whatsAppMessageTemplates,
       additional_attributes: additionalAttributes,
+      template_header_images: templateHeaderImages,
     } = inbox || {};
 
     const { message_templates: apiInboxMessageTemplates } =
@@ -67,7 +68,15 @@ export const getters = {
       return [];
     }
 
-    return templates.filter(template => {
+    // Default IMAGE header saved for the template (see the Modelos tab),
+    // used to prefill the header image when sending the template
+    const withDefaultHeaderImage = template => {
+      const url =
+        templateHeaderImages?.[`${template.name}:${template.language}`]?.url;
+      return url ? { ...template, default_header_image_url: url } : template;
+    };
+
+    return templates.map(withDefaultHeaderImage).filter(template => {
       // Ensure template has required properties
       if (!template || !template.status || !template.components) {
         return false;

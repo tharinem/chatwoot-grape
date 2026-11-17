@@ -10,6 +10,7 @@ import Input from 'dashboard/components-next/input/Input.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import WhatsappTemplateForm from './components/WhatsappTemplateForm.vue';
 import WhatsappTemplatePreview from './components/WhatsappTemplatePreview.vue';
+import WhatsappTemplateDefaultImage from './components/WhatsappTemplateDefaultImage.vue';
 
 const props = defineProps({
   inbox: { type: Object, required: true },
@@ -63,6 +64,31 @@ const selectedTemplate = computed(() =>
   templates.value.find(template => templateKey(template) === selectedKey.value)
 );
 
+const selectedHasImageHeader = computed(
+  () =>
+    !!selectedTemplate.value &&
+    findComponentByType(selectedTemplate.value, 'HEADER')?.format === 'IMAGE'
+);
+
+const inboxRecord = computed(() =>
+  store.state.inboxes.records.find(record => record.id === inboxId.value)
+);
+
+const selectedDefaultImage = computed(() => {
+  if (!selectedTemplate.value) return null;
+  const images = inboxRecord.value?.template_header_images || {};
+  return images[templateKey(selectedTemplate.value)] || null;
+});
+
+const updateInboxRecord = changes => {
+  if (!inboxRecord.value) return;
+  store.commit('inboxes/EDIT_INBOXES', { ...inboxRecord.value, ...changes });
+};
+
+const onDefaultImageUpdated = templateHeaderImages => {
+  updateInboxRecord({ template_header_images: templateHeaderImages || {} });
+};
+
 const normalizedStatus = template =>
   String(template.status || '').toUpperCase();
 
@@ -83,13 +109,10 @@ const excerpt = template => {
 // Avoids `inboxes/get`, which toggles the global fetching flag and re-renders the whole settings page.
 const refetchTemplates = async () => {
   const { data } = await InboxesAPI.show(inboxId.value);
-  const current = store.state.inboxes.records.find(
-    record => record.id === data?.id
-  );
-  if (!current) return;
-  store.commit('inboxes/EDIT_INBOXES', {
-    ...current,
+  if (data?.id !== inboxId.value) return;
+  updateInboxRecord({
     message_templates: data.message_templates,
+    template_header_images: data.template_header_images || {},
   });
 };
 
@@ -244,6 +267,13 @@ const onTemplateCreated = async () => {
           <WhatsappTemplatePreview
             v-if="selectedTemplate"
             :template="selectedTemplate"
+          />
+          <WhatsappTemplateDefaultImage
+            v-if="selectedTemplate && selectedHasImageHeader"
+            :inbox-id="inboxId"
+            :template="selectedTemplate"
+            :image="selectedDefaultImage"
+            @updated="onDefaultImageUpdated"
           />
           <p v-else class="text-sm text-n-slate-11">
             {{ $t('WHATSAPP_TEMPLATES.MANAGE.PREVIEW_HINT') }}

@@ -164,10 +164,31 @@ const applyInitialParams = (params, initial) => {
   return params;
 };
 
+// Image saved with the template (Modelos tab), used when nothing else is set
+const defaultHeaderImageUrl = computed(() =>
+  isImageTemplate.value ? props.template.default_header_image_url || '' : ''
+);
+
+const isUsingDefaultHeaderImage = computed(
+  () =>
+    !!defaultHeaderImageUrl.value &&
+    processedParams.value.header?.media_url === defaultHeaderImageUrl.value
+);
+
+const applyDefaultHeaderImage = params => {
+  if (!defaultHeaderImageUrl.value || !params.header) return params;
+  if (!params.header.media_url) {
+    params.header.media_url = defaultHeaderImageUrl.value;
+  }
+  return params;
+};
+
 const initializeTemplateParameters = () => {
-  processedParams.value = applyInitialParams(
-    buildTemplateParameters(props.template, hasMediaHeader.value),
-    props.initialParams
+  processedParams.value = applyDefaultHeaderImage(
+    applyInitialParams(
+      buildTemplateParameters(props.template, hasMediaHeader.value),
+      props.initialParams
+    )
   );
 };
 
@@ -264,6 +285,7 @@ defineExpose({
   onMediaFileChange,
   isUploadingMedia,
   mediaUploadError,
+  isUsingDefaultHeaderImage,
   sendMessage,
   resetTemplate,
   goBack,
@@ -337,6 +359,13 @@ defineExpose({
             />
           </label>
         </div>
+        <p
+          v-if="isUsingDefaultHeaderImage && !mediaUploadError"
+          class="mb-2.5 text-xs text-n-slate-11"
+          data-test-id="media-default-image-hint"
+        >
+          {{ t('WHATSAPP_TEMPLATES.PARSER.DEFAULT_IMAGE_HINT') }}
+        </p>
         <p
           v-if="mediaUploadError"
           class="mb-2.5 text-xs text-n-ruby-9"

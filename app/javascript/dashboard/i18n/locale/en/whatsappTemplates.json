@@ -46,7 +46,8 @@
       "UPLOADING_IMAGE": "Uploading image",
       "UPLOAD_IMAGE_ERROR": "Could not upload the image. Try again or paste a public link.",
       "UPLOAD_IMAGE_INVALID_TYPE": "Use a JPG or PNG image.",
-      "UPLOAD_IMAGE_TOO_LARGE": "The image must be at most 5 MB."
+      "UPLOAD_IMAGE_TOO_LARGE": "The image must be at most 5 MB.",
+      "DEFAULT_IMAGE_HINT": "Using the image saved with this template. Upload another image to replace it for this send."
     },
     "MANAGE": {
       "TITLE": "Message templates",
@@ -157,6 +158,23 @@
         "FILE_TOO_LARGE": "The image must be at most 5 MB.",
         "APP_ID_MISSING": "Image headers need the Meta app ID (WHATSAPP_APP_ID) configured on this installation. Ask the administrator.",
         "UPLOAD_FAILED": "Could not upload the image. Try again."
+      },
+      "DEFAULT_IMAGE": {
+        "TITLE": "Default image for campaigns",
+        "DESCRIPTION": "Campaigns with this template start with this image. It can still be replaced in each campaign.",
+        "EMPTY": "No image saved for this template yet.",
+        "USE_TEMPLATE_IMAGE": "Use the template image",
+        "UPLOAD": "Upload image",
+        "REPLACE": "Replace image",
+        "SAVING": "Saving",
+        "SAVED": "Default image saved.",
+        "ERRORS": {
+          "INVALID_FILE_TYPE": "Use a JPG or PNG image.",
+          "FILE_TOO_LARGE": "The image must be 5 MB or less.",
+          "NO_IMAGE_HEADER": "This template has no image header.",
+          "DOWNLOAD_FAILED": "Could not copy the image from Meta. Upload the image instead.",
+          "DEFAULT": "Could not save the image. Try again."
+        }
       }
     }
   }

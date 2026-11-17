@@ -26,6 +26,16 @@ const templates = [
     language: 'pt_BR',
     components: [{ type: 'BODY', text: 'Promoção de chocolate esta semana.' }],
   },
+  {
+    name: 'promo_imagem',
+    status: 'APPROVED',
+    category: 'MARKETING',
+    language: 'pt_BR',
+    components: [
+      { type: 'HEADER', format: 'IMAGE' },
+      { type: 'BODY', text: 'Oferta com foto.' },
+    ],
+  },
 ];
 
 const buildStore = ({ syncTemplates = vi.fn() } = {}) =>
@@ -64,10 +74,10 @@ describe('WhatsappTemplatesPage', () => {
     const wrapper = mountPage(buildStore());
     const rows = wrapper.findAll('[data-test-id="template-row"]');
 
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(3);
     expect(
       wrapper.findAll('[data-test-id="template-status"]').map(s => s.text())
-    ).toEqual(['Approved', 'Pending']);
+    ).toEqual(['Approved', 'Pending', 'Approved']);
   });
 
   it('filters by name or text', async () => {
@@ -113,7 +123,7 @@ describe('WhatsappTemplatesPage', () => {
     expect(syncTemplates).toHaveBeenCalledWith(expect.anything(), 3);
     expect(InboxesAPI.show).toHaveBeenCalledWith(3);
     expect(store.state.inboxes.records[0].name).toBe('WhatsApp');
-    expect(wrapper.findAll('[data-test-id="template-row"]')).toHaveLength(3);
+    expect(wrapper.findAll('[data-test-id="template-row"]')).toHaveLength(4);
     expect(wrapper.find('[data-test-id="refresh-hint"]').exists()).toBe(true);
   });
 
@@ -123,5 +133,20 @@ describe('WhatsappTemplatesPage', () => {
     await wrapper.find('[data-test-id="new-template"]').trigger('click');
 
     expect(wrapper.find('form').exists()).toBe(true);
+  });
+
+  it('shows the default image section only for image header templates', async () => {
+    const wrapper = mountPage(buildStore());
+    const rows = wrapper.findAll('[data-test-id="template-row"]');
+
+    await rows[0].trigger('click');
+    expect(
+      wrapper.find('[data-test-id="template-default-image"]').exists()
+    ).toBe(false);
+
+    await rows[2].trigger('click');
+    expect(
+      wrapper.find('[data-test-id="template-default-image"]').exists()
+    ).toBe(true);
   });
 });
