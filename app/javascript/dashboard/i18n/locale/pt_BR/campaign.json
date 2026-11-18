@@ -153,7 +153,15 @@
           "SENT_FROM": "Enviado de",
           "ON": "ativado"
         },
-        "EDIT": "Editar"
+        "EDIT": "Editar",
+        "DELIVERY_STATS": {
+          "SENT": "Enviados",
+          "DELIVERED": "Entregues",
+          "READ": "Lidos",
+          "FAILED": "Falhas",
+          "READ_RATE": "{rate}% lidos",
+          "NO_DATA": "Sem dados"
+        }
       },
       "CREATE": {
         "TITLE": "Criar campanha do WhatsApp",

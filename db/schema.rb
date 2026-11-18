@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_16_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_18_120000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -258,6 +258,19 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_120000) do
     t.datetime "updated_at", null: false
     t.boolean "active", default: true, null: false
     t.index ["account_id"], name: "index_automation_rules_on_account_id"
+  end
+
+  create_table "campaign_deliveries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campaign_id", null: false
+    t.bigint "contact_id"
+    t.string "source_id"
+    t.integer "status", default: 0, null: false
+    t.text "external_error"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["campaign_id", "status"], name: "index_campaign_deliveries_on_campaign_id_and_status"
+    t.index ["source_id"], name: "index_campaign_deliveries_on_source_id", unique: true
   end
 
   create_table "campaigns", force: :cascade do |t|
@@ -1300,6 +1313,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_16_120000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "campaign_deliveries", "campaigns", on_delete: :cascade
   add_foreign_key "conversation_pins", "conversations", on_delete: :cascade
   add_foreign_key "conversation_pins", "users", on_delete: :cascade
   add_foreign_key "inboxes", "portals"

@@ -45,9 +45,11 @@ class Whatsapp::IncomingMessageBaseService
   end
 
   def process_statuses
-    return unless find_message_by_source_id(@processed_params[:statuses].first[:id])
+    status = @processed_params[:statuses].first
+    # One-off campaign sends have no Message; their statuses update the CampaignDelivery instead.
+    return CampaignDelivery.update_from_whatsapp_status(inbox.account_id, status) unless find_message_by_source_id(status[:id])
 
-    update_message_with_status(@message, @processed_params[:statuses].first)
+    update_message_with_status(@message, status)
   rescue ArgumentError => e
     Rails.logger.error "Error while processing whatsapp status update #{e.message}"
   end

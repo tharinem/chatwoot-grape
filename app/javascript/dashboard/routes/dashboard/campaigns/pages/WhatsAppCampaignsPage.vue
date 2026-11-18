@@ -66,6 +66,7 @@ const handleDelete = campaign => {
       v-else-if="!hasNoWhatsAppCampaigns"
       :campaigns="WhatsAppCampaigns"
       is-editable
+      show-delivery-stats
       @edit="handleEdit"
       @delete="handleDelete"
     />

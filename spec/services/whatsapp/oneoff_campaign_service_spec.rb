@@ -134,7 +134,7 @@ describe Whatsapp::OneoffCampaignService do
               )
             )
           ),
-          nil
+          an_instance_of(CampaignDelivery)
         )
 
         described_class.new(campaign: campaign).perform
@@ -165,8 +165,9 @@ describe Whatsapp::OneoffCampaignService do
 
         allow(whatsapp_channel).to receive(:send_template).and_return(nil)
 
-        expect(whatsapp_channel).to receive(:send_template).with(contact_error.phone_number, anything, nil).and_raise(StandardError, error_message)
-        expect(whatsapp_channel).to receive(:send_template).with(contact_success.phone_number, anything, nil).once
+        expect(whatsapp_channel).to receive(:send_template)
+          .with(contact_error.phone_number, anything, anything).and_raise(StandardError, error_message)
+        expect(whatsapp_channel).to receive(:send_template).with(contact_success.phone_number, anything, anything).once
 
         expect(Rails.logger).to receive(:error)
           .with("Failed to send WhatsApp template message to #{contact_error.phone_number}: #{error_message}")
@@ -174,6 +175,61 @@ describe Whatsapp::OneoffCampaignService do
 
         described_class.new(campaign: campaign).perform
         expect(campaign.reload.completed?).to be true
+      end
+    end
+
+    context 'when recording deliveries' do
+      let!(:contact) { create(:contact, :with_phone_number, account: account) }
+
+      before { contact.update_labels([label1.title]) }
+
+      it 'records a sent delivery with the WhatsApp message id' do
+        described_class.new(campaign: campaign).perform
+
+        delivery = campaign.campaign_deliveries.sole
+        expect(delivery).to be_sent
+        expect(delivery.source_id).to eq('message_id_123')
+        expect(delivery.contact).to eq(contact)
+        expect(delivery.account_id).to eq(account.id)
+      end
+
+      it 'records a failed delivery with the API error' do
+        stub_request(:post, /graph\.facebook\.com.*messages/)
+          .to_return(status: 400, body: { error: { message: 'Template name does not exist' } }.to_json,
+                     headers: { 'Content-Type' => 'application/json' })
+
+        described_class.new(campaign: campaign).perform
+
+        delivery = campaign.campaign_deliveries.sole
+        expect(delivery).to be_failed
+        expect(delivery.source_id).to be_nil
+        expect(delivery.external_error).to eq('Template name does not exist')
+      end
+
+      it 'records a failed delivery when the send raises' do
+        allow(whatsapp_channel).to receive(:send_template).and_raise(StandardError, 'connection reset')
+
+        described_class.new(campaign: campaign).perform
+
+        delivery = campaign.campaign_deliveries.sole
+        expect(delivery).to be_failed
+        expect(delivery.external_error).to eq('connection reset')
+      end
+
+      it 'records a failed delivery when no message id is returned' do
+        allow(whatsapp_channel).to receive(:send_template).and_return(nil)
+
+        described_class.new(campaign: campaign).perform
+
+        expect(campaign.campaign_deliveries.sole).to be_failed
+      end
+
+      it 'does not record contacts skipped for having no phone number' do
+        contact.update!(phone_number: nil)
+
+        described_class.new(campaign: campaign).perform
+
+        expect(campaign.campaign_deliveries).to be_empty
       end
     end
   end

@@ -51,6 +51,7 @@ class Campaign < ApplicationRecord
   enum campaign_status: { active: 0, completed: 1 }
 
   has_many :conversations, dependent: :nullify, autosave: true
+  has_many :campaign_deliveries, dependent: :delete_all
 
   # Tolerance for a one_off campaign without scheduled_at (defaults to now in
   # ensure_correct_campaign_attributes) and for small clock differences
