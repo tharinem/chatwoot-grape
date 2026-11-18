@@ -16,6 +16,9 @@ json.campaign_type resource.campaign_type
 if resource.campaign_type == 'one_off'
   json.scheduled_at resource.scheduled_at.to_i
   json.audience resource.audience
+  # Counts of one-off sends recorded in campaign_deliveries; null when the
+  # campaign has no recorded sends (e.g. sent before tracking existed).
+  json.delivery_stats local_assigns[:delivery_stats]&.dig(resource.id) if local_assigns.key?(:delivery_stats)
 end
 json.trigger_rules resource.trigger_rules
 json.trigger_only_during_business_hours resource.trigger_only_during_business_hours

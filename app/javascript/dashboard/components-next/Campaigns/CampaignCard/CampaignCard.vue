@@ -8,6 +8,7 @@ import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
 import LiveChatCampaignDetails from './LiveChatCampaignDetails.vue';
 import SMSCampaignDetails from './SMSCampaignDetails.vue';
+import CampaignDeliveryStats from './CampaignDeliveryStats.vue';
 
 const props = defineProps({
   title: {
@@ -47,6 +48,15 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  // WhatsApp one-off campaigns show delivery counts once they were sent.
+  showDeliveryStats: {
+    type: Boolean,
+    default: false,
+  },
+  deliveryStats: {
+    type: Object,
+    default: null,
+  },
 });
 
 const emit = defineEmits(['edit', 'delete']);
@@ -82,6 +92,10 @@ const campaignStatus = computed(() => {
     ? t('CAMPAIGN.SMS.CARD.STATUS.COMPLETED')
     : t('CAMPAIGN.SMS.CARD.STATUS.SCHEDULED');
 });
+
+const shouldShowDeliveryStats = computed(
+  () => props.showDeliveryStats && props.status === STATUS_COMPLETED
+);
 
 const inboxName = computed(() => props.inbox?.name || '');
 
@@ -125,6 +139,10 @@ const inboxIcon = computed(() => {
           :scheduled-at="scheduledAt"
         />
       </div>
+      <CampaignDeliveryStats
+        v-if="shouldShowDeliveryStats"
+        :stats="deliveryStats"
+      />
     </div>
     <div class="flex items-center justify-end w-20 gap-2">
       <Button

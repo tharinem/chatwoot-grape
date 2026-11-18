@@ -153,7 +153,15 @@
           "SENT_FROM": "Sent from",
           "ON": "on"
         },
-        "EDIT": "Edit"
+        "EDIT": "Edit",
+        "DELIVERY_STATS": {
+          "SENT": "Sent",
+          "DELIVERED": "Delivered",
+          "READ": "Read",
+          "FAILED": "Failed",
+          "READ_RATE": "{rate}% read",
+          "NO_DATA": "No data"
+        }
       },
       "CREATE": {
         "TITLE": "Create WhatsApp campaign",

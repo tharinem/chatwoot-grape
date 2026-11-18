@@ -5,9 +5,12 @@ class Api::V1::Accounts::CampaignsController < Api::V1::Accounts::BaseController
 
   def index
     @campaigns = Current.account.campaigns
+    @delivery_stats = CampaignDelivery.stats_for(@campaigns.select(:id))
   end
 
-  def show; end
+  def show
+    @delivery_stats = CampaignDelivery.stats_for(@campaign.id)
+  end
 
   def create
     @campaign = Current.account.campaigns.create!(campaign_params)

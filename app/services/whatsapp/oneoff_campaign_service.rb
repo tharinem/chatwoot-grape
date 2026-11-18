@@ -58,7 +58,7 @@ class Whatsapp::OneoffCampaignService
       return
     end
 
-    send_whatsapp_template_message(to: contact.phone_number)
+    send_whatsapp_template_message(contact)
   end
 
   def process_audience(audience_labels)
@@ -70,7 +70,8 @@ class Whatsapp::OneoffCampaignService
     Rails.logger.info "Campaign #{campaign.id} processing completed"
   end
 
-  def send_whatsapp_template_message(to:)
+  def send_whatsapp_template_message(contact)
+    delivery = build_delivery(contact)
     processor = Whatsapp::TemplateProcessorService.new(
       channel: channel,
       template_params: campaign.template_params
@@ -80,17 +81,40 @@ class Whatsapp::OneoffCampaignService
 
     return if name.blank?
 
-    channel.send_template(to, {
-                            name: name,
-                            namespace: namespace,
-                            lang_code: lang_code,
-                            parameters: processed_parameters
-                          }, nil)
-
+    # The delivery is passed in place of a Message: on an API error the
+    # provider stores the error text in external_error and marks it failed.
+    source_id = channel.send_template(contact.phone_number, {
+                                        name: name,
+                                        namespace: namespace,
+                                        lang_code: lang_code,
+                                        parameters: processed_parameters
+                                      }, delivery)
+    record_delivery(delivery, source_id)
   rescue StandardError => e
-    Rails.logger.error "Failed to send WhatsApp template message to #{to}: #{e.message}"
+    Rails.logger.error "Failed to send WhatsApp template message to #{contact.phone_number}: #{e.message}"
     Rails.logger.error "Backtrace: #{e.backtrace.first(5).join('\n')}"
+    record_failure(delivery, e.message)
     # continue processing remaining contacts
     nil
+  end
+
+  def build_delivery(contact)
+    CampaignDelivery.new(account_id: campaign.account_id, campaign: campaign, contact: contact, status: :sent)
+  end
+
+  def record_delivery(delivery, source_id)
+    if source_id.present?
+      delivery.update!(source_id: source_id, status: :sent)
+    else
+      record_failure(delivery, delivery.external_error.presence || 'No message id returned by WhatsApp')
+    end
+  end
+
+  def record_failure(delivery, error)
+    return if delivery.blank?
+
+    delivery.update!(status: :failed, external_error: error.to_s.truncate(1000))
+  rescue StandardError => e
+    Rails.logger.error "Failed to record campaign delivery for campaign #{campaign.id}: #{e.message}"
   end
 end

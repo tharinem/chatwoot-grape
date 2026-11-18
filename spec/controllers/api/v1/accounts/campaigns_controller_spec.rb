@@ -35,6 +35,28 @@ RSpec.describe 'Campaigns API', type: :request do
         body = JSON.parse(response.body, symbolize_names: true)
         expect(body.first[:id]).to eq(campaign.display_id)
       end
+
+      it 'returns delivery stats for one-off campaigns with a single grouped query' do
+        whatsapp_inbox = create(:channel_whatsapp, account: account, provider: 'whatsapp_cloud', validate_provider_config: false,
+                                                   sync_templates: false).inbox
+        tracked, untracked = create_list(:campaign, 2, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now)
+        create_list(:campaign_delivery, 2, campaign: tracked, status: :delivered)
+        create(:campaign_delivery, campaign: tracked, status: :sent)
+
+        delivery_queries = 0
+        counter = lambda { |*, payload|
+          delivery_queries += 1 if payload[:sql].include?('campaign_deliveries')
+        }
+        ActiveSupport::Notifications.subscribed(counter, 'sql.active_record') do
+          get "/api/v1/accounts/#{account.id}/campaigns", headers: administrator.create_new_auth_token, as: :json
+        end
+
+        body = response.parsed_body.index_by { |c| c['id'] }
+        expect(body[tracked.display_id]['delivery_stats']).to eq('sent' => 3, 'delivered' => 2, 'read' => 0, 'failed' => 0)
+        expect(body[untracked.display_id]['delivery_stats']).to be_nil
+        expect(body[campaign.display_id]).not_to have_key('delivery_stats')
+        expect(delivery_queries).to eq(1)
+      end
     end
   end
 
@@ -386,6 +408,20 @@ RSpec.describe 'Campaigns API', type: :request do
 
       post "/api/v1/accounts/#{account.id}/labels", params: { title: 'nova' }, headers: campaign_agent.create_new_auth_token, as: :json
       expect(response).to have_http_status(:unauthorized)
+    end
+
+    it 'lets the listed agent see delivery stats of one-off campaigns' do
+      campaign = create(:campaign, account: account, inbox: whatsapp_inbox, scheduled_at: 1.day.from_now)
+      create(:campaign_delivery, campaign: campaign, status: :read)
+      create(:campaign_delivery, campaign: campaign, status: :failed, source_id: nil)
+      headers = campaign_agent.create_new_auth_token
+
+      get "/api/v1/accounts/#{account.id}/campaigns", headers: headers, as: :json
+      listed = response.parsed_body.find { |c| c['id'] == campaign.display_id }
+      expect(listed['delivery_stats']).to eq('sent' => 1, 'delivered' => 1, 'read' => 1, 'failed' => 1)
+
+      get "/api/v1/accounts/#{account.id}/campaigns/#{campaign.display_id}", headers: headers, as: :json
+      expect(response.parsed_body['delivery_stats']).to eq('sent' => 1, 'delivered' => 1, 'read' => 1, 'failed' => 1)
     end
 
     it 'exposes the campaign_manage permission on the profile' do

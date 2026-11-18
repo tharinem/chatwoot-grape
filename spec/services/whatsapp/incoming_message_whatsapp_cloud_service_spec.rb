@@ -165,6 +165,69 @@ describe Whatsapp::IncomingMessageWhatsappCloudService do
         end
       end
     end
+
+    context 'when a status update belongs to a one-off campaign send' do
+      let(:campaign) { create(:campaign, account: whatsapp_channel.account, inbox: whatsapp_channel.inbox) }
+      let!(:delivery) { create(:campaign_delivery, campaign: campaign, source_id: 'wamid.campaign_send_1') }
+
+      def status_params(status, errors: nil)
+        payload = { recipient_id: '2423423243', id: 'wamid.campaign_send_1', status: status }
+        payload[:errors] = errors if errors
+        {
+          phone_number: whatsapp_channel.phone_number,
+          object: 'whatsapp_business_account',
+          entry: [{ changes: [{ value: { statuses: [payload] } }] }]
+        }.with_indifferent_access
+      end
+
+      def receive_status(status, errors: nil)
+        described_class.new(inbox: whatsapp_channel.inbox, params: status_params(status, errors: errors)).perform
+      end
+
+      it 'moves the delivery forward through delivered and read' do
+        receive_status('delivered')
+        expect(delivery.reload).to be_delivered
+
+        receive_status('read')
+        expect(delivery.reload).to be_read
+      end
+
+      it 'does not downgrade when an older status arrives late' do
+        receive_status('read')
+        receive_status('delivered')
+        receive_status('sent')
+
+        expect(delivery.reload).to be_read
+      end
+
+      it 'marks the delivery failed with the error' do
+        receive_status('delivered')
+        receive_status('failed', errors: [{ code: 131_049, title: 'Message not delivered to maintain healthy ecosystem engagement' }])
+
+        expect(delivery.reload).to be_failed
+        expect(delivery.external_error).to eq('131049: Message not delivered to maintain healthy ecosystem engagement')
+      end
+
+      it 'ignores a delivery from another account' do
+        other_campaign = create(:campaign)
+        other_delivery = create(:campaign_delivery, campaign: other_campaign, source_id: 'wamid.other_account')
+        params = status_params('read')
+        params[:entry][0][:changes][0][:value][:statuses][0][:id] = 'wamid.other_account'
+
+        described_class.new(inbox: whatsapp_channel.inbox, params: params).perform
+
+        expect(other_delivery.reload).to be_sent
+      end
+
+      it 'keeps updating a matching Message instead of the delivery' do
+        message = create(:message, inbox: whatsapp_channel.inbox, source_id: 'wamid.campaign_send_1', status: :sent)
+
+        receive_status('read')
+
+        expect(message.reload.status).to eq('read')
+        expect(delivery.reload).to be_sent
+      end
+    end
   end
 
   # Métodos auxiliares para reduzir o tamanho do exemplo
