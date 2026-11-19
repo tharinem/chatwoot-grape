@@ -4,6 +4,12 @@ require 'rails_helper'
 # (no template doubles) so the daily limit and the away period are exercised
 # against what is stored in the conversation.
 describe MessageTemplates::HookExecutionService do
+  # Other specs can leave Time.zone changed (e.g. working_hour_spec sets
+  # Australia/Sydney), so pin it: the times below must be UTC to match the inbox.
+  around do |example|
+    Time.use_zone('UTC') { example.run }
+  end
+
   # Wednesday; the default working hours are Mon-Fri 09:00-17:00 in the inbox timezone (UTC)
   let(:business_hours) { Time.zone.parse('2026-11-18 10:00') }
   let(:after_hours) { Time.zone.parse('2026-11-18 20:00') }
