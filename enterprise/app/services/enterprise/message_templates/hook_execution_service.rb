@@ -21,6 +21,12 @@ module Enterprise::MessageTemplates::HookExecutionService
     super
   end
 
+  def should_send_agent_away_notice?
+    return false if captain_handling_conversation?
+
+    super
+  end
+
   def should_send_email_collect?
     return false if captain_handling_conversation?
 

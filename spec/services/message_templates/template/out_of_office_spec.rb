@@ -10,6 +10,11 @@ describe MessageTemplates::Template::OutOfOffice do
       expect(conversation.messages.template.first.content).to eq(conversation.inbox.out_of_office_message)
     end
 
+    it 'marks the message as an out of office notice' do
+      described_class.new(conversation: conversation).perform
+      expect(conversation.messages.template.first.content_attributes['template_kind']).to eq('out_of_office')
+    end
+
     it 'creates the out of office messages with template variable' do
       conversation.inbox.update!(out_of_office_message: 'Hey, {{contact.name}} we are unavailable at the moment.')
       described_class.new(conversation: conversation).perform
