@@ -56,15 +56,16 @@ class MessageTemplates::HookExecutionService
     message.incoming? && !message.private?
   end
 
-  # Uses the same effective status the dashboard shows: with auto-offline on,
-  # an agent without a live session counts as offline.
+  # Uses only the status the agent chose (busy/offline). Presence-derived offline
+  # (auto-offline with no live session) is ignored: background tabs and brief
+  # disconnects made agents look offline while they were still answering.
   def assignee_away?
     return false if conversation.assignee_id.blank?
 
     account_user = conversation.account.account_users.find_by(user_id: conversation.assignee_id)
     return false if account_user.blank?
 
-    %w[busy offline].include?(account_user.availability_status.to_s)
+    %w[busy offline].include?(account_user.availability.to_s)
   end
 
   # One notice per away period: a new one is allowed only after the agent has
