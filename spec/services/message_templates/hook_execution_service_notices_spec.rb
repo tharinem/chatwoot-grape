@@ -135,12 +135,12 @@ describe MessageTemplates::HookExecutionService do
       )
     end
 
-    it 'treats an online agent without a live session as offline when auto offline is on' do
+    it 'is not sent when the agent chose online but has no live session (auto offline on)' do
       set_availability(:online, auto_offline: true)
 
       travel_to(business_hours) { incoming_message }
 
-      expect(away_notices.size).to eq(1)
+      expect(away_notices).to be_empty
     end
 
     it 'is not sent when the assignee is online with a live session' do
