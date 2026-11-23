@@ -163,6 +163,19 @@ RSpec.describe MessageTemplates::HookExecutionService do
           create(:message, conversation: conversation, message_type: :incoming, account: account)
         end.not_to(change { conversation.reload.messages.template.count })
       end
+
+      it 'does not create the agent away notice in conversation' do
+        agent = create(:user, account: account, role: :agent)
+        account.account_users.find_by(user_id: agent.id).update!(availability: :busy, auto_offline: false)
+        conversation.update!(assignee: agent, status: :pending)
+        inbox.update!(working_hours_enabled: false, enable_email_collect: false)
+
+        with_modified_env(AGENT_AWAY_NOTICE_INBOX_IDS: inbox.id.to_s) do
+          expect do
+            create(:message, conversation: conversation, message_type: :incoming, account: account)
+          end.not_to(change { conversation.reload.messages.template.count })
+        end
+      end
     end
 
     context 'when conversation is open (transferred to agent)' do

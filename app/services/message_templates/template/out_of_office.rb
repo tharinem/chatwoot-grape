@@ -2,6 +2,9 @@ class MessageTemplates::Template::OutOfOffice
   pattr_initialize [:conversation!]
 
   PARAGRAPH_SEPARATOR = /\r?\n\s*\r?\n/
+  # Stored in content_attributes so the daily limit only counts out-of-office
+  # notices, not greetings or other template messages.
+  TEMPLATE_KIND = 'out_of_office'.freeze
 
   def self.perform_if_applicable(conversation)
     inbox = conversation.inbox
@@ -33,7 +36,8 @@ class MessageTemplates::Template::OutOfOffice
       account_id: @conversation.account_id,
       inbox_id: @conversation.inbox_id,
       message_type: :template,
-      content: content
+      content: content,
+      content_attributes: { template_kind: TEMPLATE_KIND }
     }
   end
 
