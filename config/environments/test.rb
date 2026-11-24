@@ -8,7 +8,11 @@ require 'active_support/core_ext/integer/time'
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
-  config.cache_classes = false
+  # Never reload code mid-suite: a spec that first builds a file watcher inside
+  # travel_to (e.g. rendering a mailer while time is frozen) sees every file as
+  # "modified" afterwards, triggering a full reload that leaves specs holding
+  # stale class references (e.g. SendReplyJob::CHANNEL_SERVICES).
+  config.enable_reloading = false
 
   # Do not eager load code on boot. This avoids loading your whole application
   # just for the purpose of running a single test. If you are using a tool that

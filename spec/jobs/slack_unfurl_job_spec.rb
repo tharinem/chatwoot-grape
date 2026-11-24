@@ -75,13 +75,15 @@ RSpec.describe SlackUnfurlJob do
 
     context 'when another account URL is shared' do
       before do
-        link_shared[:event][:links][0][:url] = 'https://qa.chatwoot.com/app/accounts/123/conversations/123'
+        # A fixed id like 123 collides with the hook's own account once the accounts sequence reaches it
+        link_shared[:event][:links][0][:url] = "https://qa.chatwoot.com/app/accounts/#{account.id + 1}/conversations/123"
       end
 
       it 'does not unfurl' do
         expect(Integrations::Slack::SlackLinkUnfurlService).not_to receive(:new)
         expect(slack_link_unfurl_service).not_to receive(:perform)
         described_class.perform_now(link_shared)
+        expect(a_request(:post, 'https://slack.com/api/conversations.members')).not_to have_been_made
       end
     end
 
