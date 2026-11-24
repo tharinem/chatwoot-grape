@@ -259,4 +259,138 @@ describe MessageTemplates::HookExecutionService do
       expect(away_notices.size).to eq(2)
     end
   end
+
+  describe 'greeting when a contact reopens a resolved conversation' do
+    let(:greeting) { 'Hi! How can we help?' }
+
+    around do |example|
+      with_modified_env(RESEND_GREETING_ON_REOPEN_INBOX_IDS: "999999, #{inbox.id}") { example.run }
+    end
+
+    def greetings
+      conversation.messages.template.reload.select { |message| message.content == greeting }
+    end
+
+    # An older conversation that already had an exchange (so it is not a first
+    # message any more) and was resolved, as a single-conversation inbox reuses it.
+    def resolve_after_earlier_exchange(**conversation_attrs)
+      travel_to(business_hours - 2.days) do
+        create(:message, conversation: conversation, account: account, inbox: inbox, message_type: :incoming)
+        conversation.messages.template.destroy_all
+        agent_reply
+        conversation.update!(status: :resolved, **conversation_attrs)
+      end
+    end
+
+    it 'is sent once during business hours when the conversation has no team' do
+      resolve_after_earlier_exchange
+
+      travel_to(business_hours) do
+        incoming_message
+        travel 1.minute
+        incoming_message
+      end
+
+      expect(conversation.reload).to be_open
+      expect(greetings.size).to eq(1)
+    end
+
+    it 'is sent again on each later reopen without a team' do
+      resolve_after_earlier_exchange
+      travel_to(business_hours) { incoming_message }
+      conversation.update!(status: :resolved)
+
+      travel_to(business_hours + 1.day) { incoming_message }
+
+      expect(greetings.size).to eq(2)
+    end
+
+    it 'is not sent when the conversation has a team' do
+      resolve_after_earlier_exchange(team: create(:team, account: account))
+
+      travel_to(business_hours) { incoming_message }
+
+      expect(greetings).to be_empty
+    end
+
+    it 'is sent when the conversation has no team even if it has an assignee' do
+      resolve_after_earlier_exchange(assignee: agent)
+
+      travel_to(business_hours) { incoming_message }
+
+      expect(greetings.size).to eq(1)
+    end
+
+    it 'is not sent after hours, where the out-of-office notice carries the menu' do
+      resolve_after_earlier_exchange
+
+      travel_to(after_hours) { incoming_message }
+
+      expect(greetings).to be_empty
+      expect(out_of_office_notices.map(&:content)).to eq(["#{out_of_office_notice}\n\n#{out_of_office_menu}"])
+    end
+
+    it 'does not count towards the out-of-office daily limit' do
+      resolve_after_earlier_exchange
+
+      travel_to(business_hours) { incoming_message }
+      travel_to(after_hours) { incoming_message }
+
+      expect(greetings.size).to eq(1)
+      expect(out_of_office_notices.size).to eq(1)
+    end
+
+    it 'is not sent on every message of an open conversation without a team' do
+      travel_to(business_hours - 2.days) do
+        incoming_message
+        agent_reply
+      end
+      expect(greetings.size).to eq(1)
+
+      travel_to(business_hours) do
+        incoming_message
+        travel 1.minute
+        incoming_message
+      end
+
+      expect(greetings.size).to eq(1)
+    end
+
+    it 'is not sent when the inbox is not listed' do
+      resolve_after_earlier_exchange
+
+      with_modified_env(RESEND_GREETING_ON_REOPEN_INBOX_IDS: '999999') do
+        travel_to(business_hours) { incoming_message }
+      end
+
+      expect(greetings).to be_empty
+    end
+
+    it 'is not sent when the greeting is disabled' do
+      resolve_after_earlier_exchange
+      inbox.update!(greeting_enabled: false)
+
+      travel_to(business_hours) { incoming_message }
+
+      expect(greetings).to be_empty
+    end
+
+    it 'is not sent on campaign conversations' do
+      resolve_after_earlier_exchange(campaign: create(:campaign, account: account, inbox: inbox))
+
+      travel_to(business_hours) { incoming_message }
+
+      expect(greetings).to be_empty
+    end
+
+    it 'keeps the greeting on the first message of a new conversation' do
+      travel_to(business_hours) do
+        incoming_message
+        travel 1.minute
+        incoming_message
+      end
+
+      expect(greetings.size).to eq(1)
+    end
+  end
 end

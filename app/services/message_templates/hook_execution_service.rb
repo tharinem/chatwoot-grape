@@ -95,7 +95,21 @@ class MessageTemplates::HookExecutionService
     # should not send if its a tweet message
     return false if conversation.tweet?
 
-    first_message_from_contact? && inbox.greeting_enabled? && inbox.greeting_message.present?
+    return false unless inbox.greeting_enabled? && inbox.greeting_message.present?
+
+    first_message_from_contact? || reopened_without_team?
+  end
+
+  # A returning contact reopened a resolved conversation that was never routed
+  # to a team: send the greeting (which carries the routing menu) again. After
+  # hours the out-of-office message already carries the menu, so it is skipped.
+  def reopened_without_team?
+    return false unless ::MessageTemplates::Template::Greeting.resend_on_reopen_enabled_for?(inbox)
+    return false unless public_incoming_contact_message?
+    return false unless message.reopened_resolved_conversation?
+    return false if conversation.team_id.present?
+
+    !inbox.out_of_office?
   end
 
   def email_collect_was_sent?
