@@ -236,6 +236,12 @@ class Message < ApplicationRecord
     save!
   end
 
+  # True when this message reopened a resolved conversation (set in the
+  # after-create callbacks, so only on the instance that was just created).
+  def reopened_resolved_conversation?
+    @reopened_resolved_conversation == true
+  end
+
   def send_update_event
     Rails.configuration.dispatcher.dispatch(MESSAGE_UPDATED, Time.zone.now, message: self, performed_by: Current.executed_by,
                                                                             previous_changes: previous_changes)
@@ -415,6 +421,9 @@ class Message < ApplicationRecord
   end
 
   def reopen_resolved_conversation
+    # read later by the template hooks (e.g. the greeting menu on reopen); the
+    # conversation's saved changes are not reliable by then, other callbacks update it
+    @reopened_resolved_conversation = true
     # mark resolved bot conversation as pending to be reopened by bot processor service
     if conversation.inbox.active_bot?
       conversation.pending!
