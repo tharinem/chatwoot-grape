@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import { useLoadWithRetry } from 'dashboard/composables/loadWithRetry';
@@ -20,16 +20,19 @@ const attachment = computed(() => {
   return attachments.value[0];
 });
 
-const { isLoaded, hasError, loadWithRetry } = useLoadWithRetry();
+const { isLoaded, isLoading, hasError, loadedUrl, loadWithRetry } =
+  useLoadWithRetry();
 
 const showGallery = ref(false);
 const isDownloading = ref(false);
 
-onMounted(() => {
-  if (attachment.value?.dataUrl) {
-    loadWithRetry(attachment.value.dataUrl);
-  }
-});
+// The file of a just-created message may not be in storage yet, so the
+// composable retries with backoff. Restart whenever the URL changes.
+watch(
+  () => attachment.value?.dataUrl,
+  url => loadWithRetry(url),
+  { immediate: true }
+);
 
 const downloadAttachment = async () => {
   const { fileType, dataUrl, extension } = attachment.value;
@@ -60,10 +63,16 @@ const handleImageError = () => {
         {{ $t('COMPONENTS.MEDIA.IMAGE_UNAVAILABLE') }}
       </p>
     </div>
+    <div
+      v-else-if="isLoading"
+      class="w-48 h-36 max-w-full rounded-lg bg-n-alpha-2 animate-pulse"
+      aria-busy="true"
+      data-testid="image-loading-skeleton"
+    />
     <div v-else-if="isLoaded" class="relative group rounded-lg overflow-hidden">
       <img
         class="skip-context-menu"
-        :src="attachment.dataUrl"
+        :src="loadedUrl"
         :width="attachment.width"
         :height="attachment.height"
       />
