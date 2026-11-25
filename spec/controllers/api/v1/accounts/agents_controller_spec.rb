@@ -63,6 +63,16 @@ RSpec.describe 'Agents API', type: :request do
       # a private note after the customer message does not count as a reply
       create(:message, conversation: noted, account: account, inbox: inbox, message_type: :incoming, created_at: 2.minutes.ago)
       create(:message, conversation: noted, account: account, inbox: inbox, message_type: :outgoing, private: true, created_at: 1.minute.ago)
+      # automatic messages after the customer message do not count as a reply
+      automated = create(:conversation, account: account, inbox: inbox, assignee: agent, status: :open)
+      create(:message, conversation: automated, account: account, inbox: inbox, message_type: :incoming, created_at: 3.minutes.ago)
+      create(:message, :bot_message, conversation: automated, account: account, inbox: inbox,
+                                     content_attributes: { automation_rule_id: 1 }, created_at: 2.minutes.ago)
+      create(:message, conversation: automated, account: account, inbox: inbox, message_type: :template, created_at: 1.minute.ago)
+      # started by the business, the customer never wrote: not waiting
+      campaign = create(:conversation, account: account, inbox: inbox, assignee: agent, status: :open)
+      create(:message, conversation: campaign, account: account, inbox: inbox, message_type: :outgoing,
+                       additional_attributes: { campaign_id: 1 })
       # not open: ignored
       create(:conversation, account: account, inbox: inbox, assignee: agent, status: :resolved)
       create(:conversation, account: account, inbox: inbox, assignee: agent_without_inbox, status: :open)
@@ -85,7 +95,7 @@ RSpec.describe 'Agents API', type: :request do
 
       expect(response).to have_http_status(:success)
       expect(response.parsed_body).to eq(
-        agent.id.to_s => { 'open' => 3, 'waiting' => 2 },
+        agent.id.to_s => { 'open' => 5, 'waiting' => 3 },
         admin.id.to_s => { 'open' => 0, 'waiting' => 0 }
       )
     end
@@ -97,7 +107,7 @@ RSpec.describe 'Agents API', type: :request do
 
       get url, headers: admin.create_new_auth_token, as: :json
 
-      expect(response.parsed_body[agent.id.to_s]).to eq('open' => 3, 'waiting' => 2)
+      expect(response.parsed_body[agent.id.to_s]).to eq('open' => 5, 'waiting' => 3)
     end
   end
 

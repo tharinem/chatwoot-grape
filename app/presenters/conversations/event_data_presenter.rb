@@ -16,12 +16,16 @@ class Conversations::EventDataPresenter < SimpleDelegator
       unread_count: unread_incoming_messages.count,
       first_reply_created_at: first_reply_created_at,
       priority: priority,
-      waiting_since: waiting_since.to_i,
+      **push_waiting,
       **push_timestamps
     }
   end
 
   private
+
+  def push_waiting
+    { waiting_since: waiting_since.to_i, waiting_for_reply: waiting_for_reply? }
+  end
 
   def push_messages
     [messages.where(account_id: account_id).chat.last&.push_event_data].compact

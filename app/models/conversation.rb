@@ -86,6 +86,19 @@ class Conversation < ApplicationRecord
           last_activity_at: :desc, id: :desc)
   }
   scope :unattended, -> { where(first_reply_created_at: nil).or(where.not(waiting_since: nil)) }
+  # "Cliente sem resposta": the contact wrote and nobody has replied since. waiting_since is set by
+  # the first contact message after a reply (or by a bot handoff) and is cleared only by replies
+  # (Message#update_waiting_since) or by resolving, so automatic messages (automation rules, greeting,
+  # out of office, agent away) never hide it. Requiring a contact message leaves out conversations the
+  # business started (campaigns, outbound templates) that the contact never answered.
+  WAITING_FOR_REPLY_SQL = <<~SQL.squish.freeze
+    conversations.waiting_since IS NOT NULL AND EXISTS (
+      SELECT 1 FROM messages waiting_message
+      WHERE waiting_message.conversation_id = conversations.id
+        AND waiting_message.message_type = #{Message.message_types[:incoming]}
+    )
+  SQL
+  scope :waiting_for_reply, -> { where(WAITING_FOR_REPLY_SQL) }
   scope :resolvable_not_waiting, lambda { |auto_resolve_after|
     return none if auto_resolve_after.to_i.zero?
 
@@ -163,6 +176,12 @@ class Conversation < ApplicationRecord
   def toggle_priority(priority = nil)
     self.priority = priority.presence
     save
+  end
+
+  def waiting_for_reply?
+    return false unless open? && waiting_since.present?
+
+    messages.incoming.exists?
   end
 
   def bot_handoff!

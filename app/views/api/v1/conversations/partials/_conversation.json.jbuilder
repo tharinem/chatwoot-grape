@@ -58,6 +58,7 @@ json.last_non_activity_message conversation.messages.where(account_id: conversat
 json.last_activity_at conversation.last_activity_at.to_i
 json.priority conversation.priority
 json.waiting_since conversation.waiting_since.to_i.to_i
+json.waiting_for_reply conversation.waiting_for_reply?
 json.sla_policy_id conversation.sla_policy_id
 # Personal pin ("Fixar conversa"): loaded once per render, not per conversation.
 @pinned_conversation_ids ||= ConversationPin.pinned_conversation_ids(Current.user, Current.account).to_set

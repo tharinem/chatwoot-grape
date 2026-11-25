@@ -102,8 +102,19 @@ describe('conversationHelper', () => {
 
   describe('#isWaitingForReply', () => {
     const incoming = { id: 1, message_type: 0, created_at: 100 };
-    const outgoing = { id: 2, message_type: 1, created_at: 200 };
-    const note = { id: 3, message_type: 1, private: true, created_at: 300 };
+    const outgoing = {
+      id: 2,
+      message_type: 1,
+      sender_type: 'User',
+      created_at: 200,
+    };
+    const note = {
+      id: 3,
+      message_type: 1,
+      sender_type: 'User',
+      private: true,
+      created_at: 300,
+    };
     const activity = { id: 4, message_type: 2, created_at: 400 };
 
     it('is true when the last public message came from the contact', () => {
@@ -144,6 +155,123 @@ describe('conversationHelper', () => {
       ).toBe(false);
       expect(isWaitingForReply({ status: 'open', messages: [] })).toBe(false);
       expect(isWaitingForReply()).toBe(false);
+    });
+
+    it('follows waiting_since and waiting_for_reply from the API', () => {
+      // contact wrote, then only automatic messages: still waiting
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          waiting_since: 100,
+          waiting_for_reply: true,
+          messages: [{ id: 5, message_type: 3, created_at: 300 }],
+        })
+      ).toBe(true);
+      // a reply cleared waiting_since
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          waiting_since: 0,
+          waiting_for_reply: false,
+          messages: [incoming],
+        })
+      ).toBe(false);
+      // business started the conversation and the contact never wrote
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          waiting_since: 100,
+          waiting_for_reply: false,
+          messages: [
+            { ...outgoing, additional_attributes: { campaign_id: 1 } },
+          ],
+        })
+      ).toBe(false);
+      expect(
+        isWaitingForReply({
+          status: 'resolved',
+          waiting_since: 100,
+          waiting_for_reply: true,
+          messages: [incoming],
+        })
+      ).toBe(false);
+    });
+
+    it('counts a contact message that arrived after the conversation payload', () => {
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          waiting_since: 100,
+          waiting_for_reply: false,
+          messages: [{ ...incoming, created_at: 500 }],
+        })
+      ).toBe(true);
+    });
+
+    it('does not treat automatic messages as a reply', () => {
+      const automation = {
+        id: 5,
+        message_type: 1,
+        sender_type: null,
+        content_attributes: { automation_rule_id: 3 },
+        created_at: 600,
+      };
+      const template = {
+        id: 6,
+        message_type: 3,
+        content_attributes: { template_kind: 'agent_away' },
+        created_at: 700,
+      };
+      const noSender = {
+        id: 7,
+        message_type: 1,
+        sender_type: null,
+        created_at: 800,
+      };
+      const campaign = {
+        id: 8,
+        message_type: 1,
+        sender_type: 'User',
+        additional_attributes: { campaign_id: 2 },
+        created_at: 900,
+      };
+
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [{ ...incoming, created_at: 500 }, automation, template],
+          last_non_activity_message: noSender,
+        })
+      ).toBe(true);
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [{ ...incoming, created_at: 500 }, campaign],
+        })
+      ).toBe(true);
+    });
+
+    it('treats agent and native app echo messages as a reply', () => {
+      const echo = {
+        id: 9,
+        message_type: 1,
+        sender_type: null,
+        content_attributes: { external_echo: true },
+        created_at: 600,
+      };
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [{ ...incoming, created_at: 500 }, echo],
+        })
+      ).toBe(false);
+      expect(
+        isWaitingForReply({
+          status: 'open',
+          messages: [{ ...incoming, created_at: 500 }],
+          last_non_activity_message: { ...outgoing, created_at: 600 },
+        })
+      ).toBe(false);
     });
   });
 });
