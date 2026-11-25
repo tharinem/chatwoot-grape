@@ -94,12 +94,34 @@ export const getUnreadMessages = (messages, agentLastSeenAt) => {
 };
 
 const MESSAGE_TYPE_INCOMING = 0;
-const MESSAGE_TYPE_ACTIVITY = 2;
+const MESSAGE_TYPE_OUTGOING = 1;
+const BOT_SENDER_TYPES = ['AgentBot', 'Captain::Assistant'];
 
-const isPublicNonActivityMessage = message =>
+/**
+ * Mirrors the backend rule for what ends the wait (Message#update_waiting_since):
+ * a person replying from Chatwoot (sender is a User) or from the channel's
+ * native app (external echo), or an agent bot. Automation rule messages,
+ * campaigns and templates (greeting, out of office, agent away) do not count.
+ */
+const isReply = message => {
+  if (message.message_type !== MESSAGE_TYPE_OUTGOING) return false;
+
+  const contentAttributes = message.content_attributes || {};
+  const additionalAttributes = message.additional_attributes || {};
+  if (contentAttributes.automation_rule_id) return false;
+  if (additionalAttributes.campaign_id) return false;
+
+  return (
+    message.sender_type === 'User' ||
+    BOT_SENDER_TYPES.includes(message.sender_type) ||
+    Boolean(contentAttributes.external_echo)
+  );
+};
+
+const countsForWaiting = message =>
   Boolean(message) &&
   !message.private &&
-  message.message_type !== MESSAGE_TYPE_ACTIVITY;
+  (message.message_type === MESSAGE_TYPE_INCOMING || isReply(message));
 
 const isNewerMessage = (candidate, current) => {
   if (candidate.created_at !== current.created_at) {
@@ -109,20 +131,38 @@ const isNewerMessage = (candidate, current) => {
 };
 
 /**
- * An open conversation is "waiting for a reply" when its last public,
- * non-activity message came from the contact. Uses only the data already in
- * the conversation list payload (loaded messages + last_non_activity_message),
- * so it updates live as messages arrive.
+ * An open conversation is "waiting for a reply" when the contact wrote and
+ * nobody has replied since. Automatic messages (automation rules, greeting,
+ * out of office, agent away) do not count as a reply.
+ *
+ * The API sends `waiting_since` (cleared only by replies) and
+ * `waiting_for_reply` (Conversation#waiting_for_reply?: waiting_since is set
+ * and the contact has written) in the list payload and in conversation events.
+ * A contact message that arrives while waiting_since is already set does not
+ * update the conversation, so a contact message loaded in the store also
+ * counts. Without those fields, falls back to the loaded messages, skipping
+ * automatic ones.
  * @param {Object} conversation - Conversation from the store.
  * @returns {Boolean}
  */
 export const isWaitingForReply = (conversation = {}) => {
   if (conversation.status !== 'open') return false;
 
-  const candidates = [
+  const loadedMessages = [
     ...(conversation.messages || []),
     conversation.last_non_activity_message,
-  ].filter(isPublicNonActivityMessage);
+  ];
+  if (typeof conversation.waiting_for_reply === 'boolean') {
+    if (!conversation.waiting_since) return false;
+    return (
+      conversation.waiting_for_reply ||
+      loadedMessages.some(
+        message => message && message.message_type === MESSAGE_TYPE_INCOMING
+      )
+    );
+  }
+
+  const candidates = loadedMessages.filter(countsForWaiting);
   if (!candidates.length) return false;
 
   const latest = candidates.reduce((current, candidate) =>

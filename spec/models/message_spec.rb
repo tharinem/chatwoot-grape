@@ -225,6 +225,38 @@ RSpec.describe Message do
       expect(conversation.waiting_since).to eq conversation.created_at
     end
 
+    it 'counts the agent reply as the first reply after an automation rule message' do
+      create(:message, message_type: :incoming, conversation: conversation)
+      create(:message, :bot_message, conversation: conversation, content_attributes: { automation_rule_id: 1 })
+      expect(conversation.reload.first_reply_created_at).to be_nil
+
+      agent_reply = create(:message, message_type: :outgoing, conversation: conversation)
+
+      expect(conversation.reload.first_reply_created_at).to be_within(1.second).of(agent_reply.created_at)
+      expect(conversation.waiting_since).to be_nil
+    end
+
+    it 'counts a native app echo as the first reply' do
+      echo = create(:message, :bot_message, conversation: conversation, content_attributes: { external_echo: true })
+
+      expect(conversation.reload.first_reply_created_at).to be_within(1.second).of(echo.created_at)
+    end
+
+    it 'does not update first reply for an outgoing message without a sender' do
+      create(:message, :bot_message, conversation: conversation)
+
+      expect(conversation.reload.first_reply_created_at).to be_nil
+    end
+
+    it 'does not set first reply on a later agent message once an agent has replied' do
+      first = create(:message, message_type: :outgoing, conversation: conversation)
+      conversation.update!(first_reply_created_at: nil)
+      create(:message, message_type: :outgoing, conversation: conversation)
+
+      expect(conversation.reload.first_reply_created_at).to be_nil
+      expect(first).to be_persisted
+    end
+
     it 'does not update first reply if the message is sent by automation' do
       expect(conversation.first_reply_created_at).to be_nil
       expect(conversation.waiting_since).to eq conversation.created_at
@@ -364,6 +396,73 @@ RSpec.describe Message do
 
         conversation.reload
         expect(conversation.waiting_since).to be_nil
+      end
+    end
+
+    context 'when the business sends automatic messages' do
+      let(:account) { create(:account) }
+      let(:inbox) { create(:inbox, account: account) }
+      let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+
+      around { |example| Time.use_zone('UTC') { example.run } }
+
+      before do
+        create(:message, conversation: conversation, message_type: :incoming)
+        conversation.reload
+      end
+
+      def create_message(*traits, **attributes)
+        create(:message, *traits, conversation: conversation, **attributes)
+      end
+
+      it 'keeps waiting_since after an automation rule message' do
+        rule = create(:automation_rule, account: conversation.account)
+        expect { create_message(:bot_message, content_attributes: { automation_rule_id: rule.id }) }
+          .not_to(change { conversation.reload.waiting_since })
+        expect(conversation.waiting_since).not_to be_nil
+        expect(conversation).to be_waiting_for_reply
+      end
+
+      it 'keeps waiting_since after an outgoing message without a sender' do
+        expect { create_message(:bot_message) }.not_to(change { conversation.reload.waiting_since })
+      end
+
+      it 'keeps waiting_since after a campaign message' do
+        expect { create_message(message_type: :outgoing, additional_attributes: { campaign_id: 1 }) }
+          .not_to(change { conversation.reload.waiting_since })
+      end
+
+      it 'keeps waiting_since after the greeting, out of office and agent away template services' do
+        inbox.update!(greeting_enabled: true, greeting_message: 'Hi', out_of_office_message: 'We are closed')
+        waiting_since = conversation.waiting_since
+
+        MessageTemplates::Template::Greeting.new(conversation: conversation).perform
+        MessageTemplates::Template::OutOfOffice.new(conversation: conversation).perform
+        MessageTemplates::Template::AgentAway.new(conversation: conversation).perform
+
+        expect(conversation.messages.template.count).to eq 3
+        expect(conversation.reload.waiting_since).to eq waiting_since
+        expect(conversation).to be_waiting_for_reply
+      end
+
+      it 'keeps waiting_since after a private note' do
+        expect { create_message(message_type: :outgoing, private: true, sender: agent) }
+          .not_to(change { conversation.reload.waiting_since })
+      end
+
+      it 'clears waiting_since when an agent replies' do
+        create(:message, :bot_message, conversation: conversation, content_attributes: { automation_rule_id: 1 })
+        create(:message, conversation: conversation, message_type: :outgoing, sender: agent)
+
+        expect(conversation.reload.waiting_since).to be_nil
+        expect(conversation).not_to be_waiting_for_reply
+      end
+
+      it 'clears waiting_since when an agent replies from the native app (external echo)' do
+        create(:message, :bot_message, conversation: conversation, content_attributes: { external_echo: true })
+
+        expect(conversation.reload.waiting_since).to be_nil
+        expect(conversation).not_to be_waiting_for_reply
       end
     end
 

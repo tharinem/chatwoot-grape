@@ -313,6 +313,62 @@ RSpec.describe Conversation do
     end
   end
 
+  describe '#waiting_for_reply?' do
+    let(:account) { create(:account) }
+    let(:inbox) { create(:inbox, account: account) }
+    let(:agent) { create(:user, account: account) }
+    let(:conversation) { create(:conversation, account: account, inbox: inbox, status: :open) }
+
+    around { |example| Time.use_zone('UTC') { example.run } }
+
+    def waiting_ids
+      account.conversations.waiting_for_reply.pluck(:id)
+    end
+
+    it 'is true when the contact wrote and only automatic messages followed' do
+      create(:message, conversation: conversation, message_type: :incoming)
+      create(:message, :bot_message, conversation: conversation, content_attributes: { automation_rule_id: 1 })
+      MessageTemplates::Template::AgentAway.new(conversation: conversation).perform
+
+      expect(conversation.reload).to be_waiting_for_reply
+      expect(waiting_ids).to eq [conversation.id]
+    end
+
+    it 'is false after an agent reply or a native app echo' do
+      create(:message, conversation: conversation, message_type: :incoming)
+      create(:message, conversation: conversation, message_type: :outgoing, sender: agent)
+      expect(conversation.reload).not_to be_waiting_for_reply
+
+      create(:message, conversation: conversation, message_type: :incoming)
+      expect(conversation.reload).to be_waiting_for_reply
+
+      create(:message, :bot_message, conversation: conversation, content_attributes: { external_echo: true })
+      expect(conversation.reload).not_to be_waiting_for_reply
+      expect(waiting_ids).to be_empty
+    end
+
+    it 'is false when the business started the conversation and the contact never wrote' do
+      create(:message, conversation: conversation, message_type: :outgoing, additional_attributes: { campaign_id: 1 })
+
+      expect(conversation.reload.waiting_since).not_to be_nil
+      expect(conversation).not_to be_waiting_for_reply
+      expect(waiting_ids).to be_empty
+    end
+
+    it 'is false when the conversation is not open' do
+      create(:message, conversation: conversation, message_type: :incoming)
+      conversation.update!(status: :pending)
+
+      expect(conversation).not_to be_waiting_for_reply
+    end
+
+    it 'is sent in the conversation event payload' do
+      create(:message, conversation: conversation, message_type: :incoming)
+
+      expect(conversation.reload.push_event_data[:waiting_for_reply]).to be(true)
+    end
+  end
+
   describe '#bot_handoff!' do
     let(:conversation) { create(:conversation, status: :pending) }
 
@@ -629,6 +685,7 @@ RSpec.describe Conversation do
         created_at: conversation.created_at.to_i,
         updated_at: conversation.updated_at.to_f,
         waiting_since: conversation.waiting_since.to_i,
+        waiting_for_reply: false,
         priority: nil,
         unread_count: 0
       }
